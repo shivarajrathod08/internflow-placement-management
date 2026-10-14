@@ -51,15 +51,23 @@ public class PlacementDriveController {
         return new ResponseEntity<>(ApiResponse.ok("Placement drive scheduled successfully", created), HttpStatus.CREATED);
     }
 
-    @PatchMapping("/{id}/status")
+    @RequestMapping(value = "/{id}/status", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('TPO', 'ADMIN')")
     @Operation(summary = "Update placement drive status (TPO / Admin)")
     public ResponseEntity<ApiResponse<PlacementDriveDTO>> updateStatus(
             @PathVariable Long id,
-            @RequestParam PlacementDriveStatus status) {
+            @RequestParam(required = false) PlacementDriveStatus status,
+            @RequestBody(required = false) java.util.Map<String, Object> body) {
+        PlacementDriveStatus targetStatus = status;
+        if (targetStatus == null && body != null && body.containsKey("status")) {
+            targetStatus = PlacementDriveStatus.valueOf(body.get("status").toString().toUpperCase());
+        }
+        if (targetStatus == null) {
+            throw new com.internflow.exception.BadRequestException("Placement drive status is required");
+        }
         Long userId = SecurityUtils.getCurrentUserId();
-        PlacementDriveDTO updated = driveService.updateStatus(id, status, userId);
-        return ResponseEntity.ok(ApiResponse.ok("Drive status updated to " + status, updated));
+        PlacementDriveDTO updated = driveService.updateStatus(id, targetStatus, userId);
+        return ResponseEntity.ok(ApiResponse.ok("Drive status updated to " + targetStatus, updated));
     }
 
     @GetMapping("/{id}/eligible-candidates")

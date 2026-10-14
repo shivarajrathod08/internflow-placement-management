@@ -32,10 +32,10 @@ export const CompanyDashboard: React.FC = () => {
     try {
       setLoading(true);
       const [profileRes, analyticsRes, postingsRes, applicantsRes] = await Promise.all([
-        apiClient.get<ApiResponse<CompanyProfile>>('/api/company/profile'),
-        apiClient.get<ApiResponse<CompanyAnalytics>>('/api/analytics/company'),
-        apiClient.get<ApiResponse<PageResponse<Internship>>>('/api/internships/company?size=5'),
-        apiClient.get<ApiResponse<PageResponse<Application>>>('/api/applications/company?size=5'),
+        apiClient.get<ApiResponse<CompanyProfile>>('/company/profile'),
+        apiClient.get<ApiResponse<CompanyAnalytics>>('/analytics/company'),
+        apiClient.get<ApiResponse<PageResponse<Internship>>>('/internships/company?size=5'),
+        apiClient.get<ApiResponse<PageResponse<Application>>>('/applications/company?size=5'),
       ]);
 
       if (profileRes.data.success) setProfile(profileRes.data.data);

@@ -31,14 +31,14 @@ export const MatchModal: React.FC<MatchModalProps> = ({
         if (studentId) {
           // Recruiter / Admin viewing a candidate's match
           const matchRes = await apiClient.get<ApiResponse<MatchResult>>(
-            `/api/students/${studentId}/matches/${internshipId}`
+            `/students/${studentId}/matches/${internshipId}`
           );
           if (matchRes.data.success) setMatch(matchRes.data.data);
         } else {
           // Student viewing their own match
           const [matchRes, gapRes] = await Promise.all([
-            apiClient.get<ApiResponse<MatchResult>>(`/api/students/me/matches/${internshipId}`),
-            apiClient.get<ApiResponse<SkillGap>>(`/api/students/me/skill-gap/${internshipId}`),
+            apiClient.get<ApiResponse<MatchResult>>(`/students/me/matches/${internshipId}`),
+            apiClient.get<ApiResponse<SkillGap>>(`/students/me/skill-gap/${internshipId}`),
           ]);
           if (matchRes.data.success) setMatch(matchRes.data.data);
           if (gapRes.data.success) setGap(gapRes.data.data);

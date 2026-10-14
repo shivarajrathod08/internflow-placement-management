@@ -28,7 +28,7 @@ export const StudentDocuments: React.FC = () => {
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get<ApiResponse<Document[]>>('/api/documents/student/me');
+      const res = await apiClient.get<ApiResponse<Document[]>>('/documents/student/me');
       if (res.data.success) {
         setDocuments(res.data.data);
       }
@@ -41,7 +41,7 @@ export const StudentDocuments: React.FC = () => {
 
   const fetchApplications = async () => {
     try {
-      const res = await apiClient.get<ApiResponse<PageResponse<Application>>>('/api/applications/student/me?size=50');
+      const res = await apiClient.get<ApiResponse<PageResponse<Application>>>('/applications/student/me?size=50');
       if (res.data.success) {
         setApplications(res.data.data.content);
       }
@@ -79,7 +79,7 @@ export const StudentDocuments: React.FC = () => {
         formData.append('applicationId', selectedAppId);
       }
 
-      const res = await apiClient.post<ApiResponse<Document>>('/api/documents/upload', formData, {
+      const res = await apiClient.post<ApiResponse<Document>>('/documents/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -101,7 +101,7 @@ export const StudentDocuments: React.FC = () => {
 
   const handleDownload = async (doc: Document) => {
     try {
-      const response = await apiClient.get(`/api/documents/${doc.id}/download`, {
+      const response = await apiClient.get(`/documents/${doc.id}/download`, {
         responseType: 'blob',
       });
       const blob = new Blob([response.data], { type: doc.mimeType || 'application/pdf' });

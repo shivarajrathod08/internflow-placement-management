@@ -65,9 +65,16 @@ public class EligibilityEngineService {
         }
 
         // 5. Verification status
+        if (!Boolean.TRUE.equals(student.getIsVerified())) {
+            requiresVerification = true;
+            reasons.add("Your profile academic standing is pending institutional verification by TPO/Coordinator.");
+        }
+
         EligibilityStatus status;
         if (reasons.isEmpty()) {
             status = EligibilityStatus.ELIGIBLE;
+        } else if (requiresVerification && reasons.size() == 1) {
+            status = EligibilityStatus.AWAITING_VERIFICATION;
         } else {
             status = EligibilityStatus.INELIGIBLE;
         }
@@ -83,7 +90,7 @@ public class EligibilityEngineService {
         return EligibilityEvaluationResult.builder()
                 .internshipId(internship.getId())
                 .studentId(student.getId())
-                .eligible(reasons.isEmpty())
+                .eligible(status == EligibilityStatus.ELIGIBLE)
                 .status(status)
                 .reasons(reasons)
                 .criteria(criteriaDTO)

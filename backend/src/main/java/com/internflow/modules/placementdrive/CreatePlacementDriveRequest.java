@@ -10,25 +10,53 @@ import java.time.LocalDateTime;
 
 @Data
 public class CreatePlacementDriveRequest {
-    @NotBlank(message = "Title is required")
     private String title;
+    private String name;
 
     private String description;
-
-    @NotBlank(message = "Academic year is required")
     private String academicYear;
+    private Integer batchYear;
 
     private Long companyId;
     private Long internshipId;
 
-    @NotNull(message = "Drive date is required")
     private LocalDateTime driveDate;
+    private String startDate;
 
-    @NotNull(message = "Registration deadline is required")
     private LocalDateTime registrationDeadline;
+    private String endDate;
 
     private String venueOrLink;
     private String eligibleBranches;
     private BigDecimal minCgpa;
+    private Integer maxBacklogs;
     private String rulesSummary;
+
+    public String getTitle() {
+        if (title != null && !title.isBlank()) return title;
+        if (name != null && !name.isBlank()) return name;
+        return "Placement Drive";
+    }
+
+    public String getAcademicYear() {
+        if (academicYear != null && !academicYear.isBlank()) return academicYear;
+        if (batchYear != null) return (batchYear - 1) + "-" + batchYear;
+        return "2025-2026";
+    }
+
+    public LocalDateTime getDriveDate() {
+        if (driveDate != null) return driveDate;
+        if (startDate != null && !startDate.isBlank()) {
+            return startDate.contains("T") ? LocalDateTime.parse(startDate.replace("Z", "")) : java.time.LocalDate.parse(startDate).atStartOfDay();
+        }
+        return LocalDateTime.now().plusDays(7);
+    }
+
+    public LocalDateTime getRegistrationDeadline() {
+        if (registrationDeadline != null) return registrationDeadline;
+        if (endDate != null && !endDate.isBlank()) {
+            return endDate.contains("T") ? LocalDateTime.parse(endDate.replace("Z", "")) : java.time.LocalDate.parse(endDate).atStartOfDay();
+        }
+        return getDriveDate().minusDays(2);
+    }
 }

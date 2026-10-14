@@ -16,10 +16,33 @@ public class CreateOfferRequest {
     @NotBlank(message = "Designation is required")
     private String designation;
 
-    @NotNull(message = "CTC or Stipend is required")
-    @DecimalMin(value = "0.00", message = "Compensation must be non-negative")
     private BigDecimal ctcOrStipend;
+    private BigDecimal stipendOrSalary;
 
     private String offerLetterUrl;
     private LocalDateTime joiningDate;
+
+    public BigDecimal getCtcOrStipend() {
+        if (ctcOrStipend != null) {
+            return ctcOrStipend;
+        }
+        return stipendOrSalary != null ? stipendOrSalary : BigDecimal.ZERO;
+    }
+
+    public void setJoiningDate(Object dateObj) {
+        if (dateObj == null) {
+            this.joiningDate = null;
+        } else if (dateObj instanceof LocalDateTime ldt) {
+            this.joiningDate = ldt;
+        } else {
+            String str = dateObj.toString().trim();
+            if (str.isEmpty()) {
+                this.joiningDate = null;
+            } else if (str.contains("T")) {
+                this.joiningDate = LocalDateTime.parse(str.replace("Z", ""));
+            } else {
+                this.joiningDate = java.time.LocalDate.parse(str).atStartOfDay();
+            }
+        }
+    }
 }

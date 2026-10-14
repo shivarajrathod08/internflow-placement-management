@@ -13,7 +13,13 @@ import {
 
 export const placementDrivesApi = {
   getAll: async () => {
-    const res = await api.get<ApiResponse<PlacementDrive[]>>('/placement-drives');
+    const res = await api.get<ApiResponse<any>>('/placement-drives');
+    if (res.data?.data && Array.isArray(res.data.data.content)) {
+      return {
+        ...res.data,
+        data: res.data.data.content as PlacementDrive[],
+      };
+    }
     return res.data;
   },
   getById: async (id: number) => {
@@ -25,7 +31,7 @@ export const placementDrivesApi = {
     return res.data;
   },
   updateStatus: async (id: number, status: PlacementDriveStatus) => {
-    const res = await api.put<ApiResponse<PlacementDrive>>(`/placement-drives/${id}/status`, null, {
+    const res = await api.patch<ApiResponse<PlacementDrive>>(`/placement-drives/${id}/status`, null, {
       params: { status },
     });
     return res.data;
@@ -45,16 +51,27 @@ export const offersApi = {
     const res = await api.get<ApiResponse<Offer[]>>('/offers/my');
     return res.data;
   },
-  getCompanyOffers: async (companyId: number) => {
-    const res = await api.get<ApiResponse<Offer[]>>(`/offers/company/${companyId}`);
+  getCompanyOffers: async (companyId?: number) => {
+    const endpoint = companyId ? `/offers/company/${companyId}` : '/offers/company';
+    const res = await api.get<ApiResponse<Offer[]>>(endpoint);
     return res.data;
   },
   getAllOffers: async () => {
-    const res = await api.get<ApiResponse<Offer[]>>('/offers');
+    const res = await api.get<ApiResponse<any>>('/offers/all');
+    if (res.data?.data && Array.isArray(res.data.data.content)) {
+      return {
+        ...res.data,
+        data: res.data.data.content as Offer[],
+      };
+    }
     return res.data;
   },
   updateStatus: async (id: number, status: OfferStatus, studentRemarks?: string) => {
-    const res = await api.put<ApiResponse<Offer>>(`/offers/${id}/status`, { status, studentRemarks });
+    const res = await api.patch<ApiResponse<Offer>>(`/offers/${id}/status`, {
+      status,
+      responseNotes: studentRemarks,
+      studentRemarks,
+    });
     return res.data;
   },
 };

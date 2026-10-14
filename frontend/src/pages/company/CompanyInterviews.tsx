@@ -50,7 +50,7 @@ export const CompanyInterviews: React.FC = () => {
       setLoading(true);
       setError(null);
       const res = await apiClient.get<ApiResponse<PageResponse<Interview>>>(
-        `/api/interviews/company?page=${page}&size=10`
+        `/interviews/company?page=${page}&size=10`
       );
       if (res.data.success) {
         setInterviews(res.data.data.content);
@@ -72,10 +72,11 @@ export const CompanyInterviews: React.FC = () => {
       setSubmittingFeedback(true);
       setError(null);
 
-      const res = await apiClient.post(`/api/interviews/${feedbackInterview.id}/feedback`, {
+      const res = await apiClient.post(`/interviews/${feedbackInterview.id}/feedback`, {
         feedback: feedbackText,
         rating,
         outcome,
+        status: 'COMPLETED',
       });
 
       if (res.data.success) {
@@ -99,7 +100,7 @@ export const CompanyInterviews: React.FC = () => {
       setSubmittingReschedule(true);
       setError(null);
 
-      const res = await apiClient.patch(`/api/interviews/${rescheduleInterview.id}/reschedule`, {
+      const res = await apiClient.patch(`/interviews/${rescheduleInterview.id}/reschedule`, {
         newScheduledAt: new Date(newDateTime).toISOString(),
         meetingLink: newMeetingLink || rescheduleInterview.meetingLink,
       });

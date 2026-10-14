@@ -43,6 +43,7 @@ public class DocumentController {
     }
 
     @GetMapping("/{id}/download")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Securely download or view an uploaded document")
     public ResponseEntity<Resource> downloadDocument(@PathVariable Long id) {
         Long userId = SecurityUtils.getCurrentUserId();

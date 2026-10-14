@@ -53,6 +53,15 @@ public class InternshipService {
     }
 
     @Transactional(readOnly = true)
+    public InternshipDTO getPublishedInternshipById(Long id) {
+        Internship entity = getInternshipEntity(id);
+        if (entity.getStatus() != InternshipStatus.PUBLISHED) {
+            throw new ResourceNotFoundException("Internship", "id", id);
+        }
+        return InternshipDTO.from(entity);
+    }
+
+    @Transactional(readOnly = true)
     public Page<InternshipDTO> searchPublishedInternships(InternshipFilterRequest filter, Pageable pageable) {
         Specification<Internship> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();

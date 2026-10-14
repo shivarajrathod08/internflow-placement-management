@@ -28,7 +28,7 @@ export const CompanyProfile: React.FC = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get<ApiResponse<CompanyProfileType>>('/api/company/profile');
+      const res = await apiClient.get<ApiResponse<CompanyProfileType>>('/company/profile');
       if (res.data.success) {
         const data = res.data.data;
         setProfile(data);
@@ -58,7 +58,7 @@ export const CompanyProfile: React.FC = () => {
       setSaving(true);
       setError(null);
       setSuccess(null);
-      const res = await apiClient.put<ApiResponse<CompanyProfileType>>('/api/company/profile', formData);
+      const res = await apiClient.put<ApiResponse<CompanyProfileType>>('/company/profile', formData);
       if (res.data.success) {
         setProfile(res.data.data);
         setSuccess('Company profile updated successfully!');

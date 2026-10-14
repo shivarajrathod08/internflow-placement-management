@@ -6,6 +6,8 @@ import com.internflow.modules.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +15,8 @@ import java.util.List;
 
 @Slf4j
 @Component
+@Profile("local")
+@ConditionalOnProperty(name = "app.demo.seed-enabled", havingValue = "true", matchIfMissing = false)
 @RequiredArgsConstructor
 public class DemoDataInitializer implements CommandLineRunner {
 
@@ -43,6 +47,6 @@ public class DemoDataInitializer implements CommandLineRunner {
             });
         }
 
-        log.info("Demo user credentials verified. Default password for demo accounts is '{}'", defaultPass);
+        log.info("Demo user credentials verified for active local environment.");
     }
 }

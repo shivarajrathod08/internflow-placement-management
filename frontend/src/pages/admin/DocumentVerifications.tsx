@@ -41,7 +41,7 @@ export const DocumentVerifications: React.FC = () => {
       setLoading(true);
       setError(null);
       const res = await apiClient.get<ApiResponse<PageResponse<Document>>>(
-        `/api/documents/admin/pending?page=${page}&size=10`
+        `/documents/admin/pending?page=${page}&size=10`
       );
       if (res.data.success) {
         setDocuments(res.data.data.content);
@@ -59,7 +59,7 @@ export const DocumentVerifications: React.FC = () => {
     try {
       setSubmittingAction(true);
       setError(null);
-      const res = await apiClient.post(`/api/documents/admin/${doc.id}/verify`, {
+      const res = await apiClient.post(`/documents/admin/${doc.id}/verify`, {
         status,
         rejectionReason: reason,
       });
@@ -79,7 +79,7 @@ export const DocumentVerifications: React.FC = () => {
 
   const handleDownload = async (doc: Document) => {
     try {
-      const response = await apiClient.get(`/api/documents/${doc.id}/download`, {
+      const response = await apiClient.get(`/documents/${doc.id}/download`, {
         responseType: 'blob',
       });
       const blob = new Blob([response.data], { type: doc.mimeType || 'application/pdf' });

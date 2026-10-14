@@ -33,7 +33,7 @@ export const AuditLogs: React.FC = () => {
       setLoading(true);
       setError(null);
       const res = await apiClient.get<ApiResponse<PageResponse<AuditLogItem>>>(
-        `/api/admin/audit-logs?page=${page}&size=15&sort=createdAt,desc`
+        `/admin/audit-logs?page=${page}&size=15&sort=createdAt,desc`
       );
 
       if (res.data.success) {

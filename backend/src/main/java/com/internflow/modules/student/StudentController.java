@@ -6,6 +6,7 @@ import com.internflow.modules.internship.InternshipRepository;
 import com.internflow.modules.matching.MatchResultDTO;
 import com.internflow.modules.matching.MatchingEngineService;
 import com.internflow.modules.matching.SkillGapDTO;
+import com.internflow.modules.user.Role;
 import com.internflow.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -119,8 +120,8 @@ public class StudentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('TPO', 'FACULTY_COORDINATOR', 'ADMIN', 'COMPANY', 'RECRUITER')")
-    @Operation(summary = "Get all student profiles (for staff, recruiters, coordinators)")
+    @PreAuthorize("hasAnyRole('TPO', 'FACULTY_COORDINATOR', 'ADMIN')")
+    @Operation(summary = "Get all student profiles (for staff and coordinators)")
     public ResponseEntity<ApiResponse<List<StudentProfileDTO>>> getAllStudents() {
         return ResponseEntity.ok(ApiResponse.ok(studentService.getAllStudents()));
     }
@@ -139,6 +140,14 @@ public class StudentController {
     @PreAuthorize("hasAnyRole('COMPANY', 'RECRUITER', 'ADMIN', 'TPO', 'FACULTY_COORDINATOR')")
     @Operation(summary = "View student profile (for recruiters & staff)")
     public ResponseEntity<ApiResponse<StudentProfileDTO>> getStudentById(@PathVariable Long id) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        Role currentUserRole = SecurityUtils.getCurrentUserRole();
+        if (currentUserRole == Role.COMPANY) {
+            boolean hasApplied = studentService.hasStudentAppliedToCompany(id, currentUserId);
+            if (!hasApplied) {
+                throw new com.internflow.exception.ForbiddenException("Access denied. Candidate has not applied to your organization.");
+            }
+        }
         StudentProfileDTO profile = studentService.getProfileById(id);
         return ResponseEntity.ok(ApiResponse.ok(profile));
     }
@@ -162,10 +171,19 @@ public class StudentController {
     public ResponseEntity<ApiResponse<MatchResultDTO>> getCandidateMatch(
             @PathVariable Long studentId,
             @PathVariable Long internshipId) {
-        Student student = studentService.getStudentEntityById(studentId);
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        Role currentUserRole = SecurityUtils.getCurrentUserRole();
+
         Internship internship = internshipRepository.findById(internshipId)
                 .orElseThrow(() -> new com.internflow.exception.ResourceNotFoundException("Internship", "id", internshipId));
 
+        if (currentUserRole == Role.COMPANY) {
+            if (!internship.getCompany().getUser().getId().equals(currentUserId)) {
+                throw new com.internflow.exception.ForbiddenException("Access denied. You do not own this internship posting.");
+            }
+        }
+
+        Student student = studentService.getStudentEntityById(studentId);
         MatchResultDTO result = matchingEngineService.calculateMatch(student, internship);
         return ResponseEntity.ok(ApiResponse.ok(result));
     }

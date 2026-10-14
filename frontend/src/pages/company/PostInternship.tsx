@@ -39,7 +39,7 @@ export const PostInternship: React.FC = () => {
 
   const fetchSkills = async () => {
     try {
-      const res = await apiClient.get<ApiResponse<SkillItem[]>>('/api/skills/public');
+      const res = await apiClient.get<ApiResponse<SkillItem[]>>('/skills/public');
       if (res.data.success) {
         setCanonicalSkills(res.data.data);
       }
@@ -99,7 +99,7 @@ export const PostInternship: React.FC = () => {
         preferredSkills,
       };
 
-      const res = await apiClient.post<ApiResponse<Internship>>('/api/internships/company', payload);
+      const res = await apiClient.post<ApiResponse<Internship>>('/internships/company', payload);
       if (res.data.success) {
         navigate('/company/dashboard');
       }

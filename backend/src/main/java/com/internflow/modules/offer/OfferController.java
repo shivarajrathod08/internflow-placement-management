@@ -35,7 +35,8 @@ public class OfferController {
     }
 
     @PatchMapping("/{id}/status")
-    @Operation(summary = "Accept or decline an offer (Student or TPO)")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Accept, decline, or revoke an offer")
     public ResponseEntity<ApiResponse<OfferDTO>> updateOfferStatus(
             @PathVariable Long id,
             @Valid @RequestBody UpdateOfferStatusRequest request) {
@@ -62,7 +63,15 @@ public class OfferController {
         return ResponseEntity.ok(ApiResponse.ok(offers));
     }
 
-    @GetMapping("/all")
+    @GetMapping("/company/{companyId}")
+    @PreAuthorize("hasAnyRole('COMPANY', 'RECRUITER', 'ADMIN', 'TPO')")
+    @Operation(summary = "Get all offers extended by a company ID")
+    public ResponseEntity<ApiResponse<List<OfferDTO>>> getOffersByCompanyId(@PathVariable Long companyId) {
+        List<OfferDTO> offers = offerService.getOffersByCompanyEntityId(companyId);
+        return ResponseEntity.ok(ApiResponse.ok(offers));
+    }
+
+    @GetMapping({"", "/all"})
     @PreAuthorize("hasAnyRole('TPO', 'ADMIN', 'FACULTY_COORDINATOR')")
     @Operation(summary = "Get all offers across the college (TPO / Admin / Faculty Coordinator)")
     public ResponseEntity<ApiResponse<PageResponse<OfferDTO>>> getAllOffers(

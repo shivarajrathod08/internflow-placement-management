@@ -20,7 +20,10 @@ public class JwtTokenProvider {
 
     public JwtTokenProvider(@Value("${app.jwt.secret}") String secret,
                             @Value("${app.jwt.expiration-ms:86400000}") long jwtExpirationMs) {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        if (secret == null || secret.trim().isEmpty() || secret.trim().length() < 32) {
+            throw new IllegalArgumentException("JWT secret key must not be blank and must provide at least 256 bits of entropy.");
+        }
+        byte[] keyBytes = Decoders.BASE64.decode(secret.trim());
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.jwtExpirationMs = jwtExpirationMs;
     }

@@ -52,4 +52,26 @@ public class PlacementDriveDTO {
                 .updatedAt(d.getUpdatedAt())
                 .build();
     }
+
+    public String getName() {
+        return title;
+    }
+
+    public String getStartDate() {
+        return driveDate != null ? driveDate.toString() : null;
+    }
+
+    public String getEndDate() {
+        return registrationDeadline != null ? registrationDeadline.toString() : null;
+    }
+
+    public Integer getBatchYear() {
+        try {
+            if (academicYear != null && academicYear.contains("-")) {
+                String[] parts = academicYear.split("-");
+                return Integer.parseInt(parts[1].trim());
+            }
+        } catch (Exception ignored) {}
+        return 2026;
+    }
 }

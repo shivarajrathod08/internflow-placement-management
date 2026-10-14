@@ -26,6 +26,14 @@ public class StudentService {
     private final StudentCertificationRepository studentCertificationRepository;
     private final SkillService skillService;
     private final AuditService auditService;
+    private final com.internflow.modules.application.ApplicationRepository applicationRepository;
+
+    @Transactional(readOnly = true)
+    public boolean hasStudentAppliedToCompany(Long studentId, Long companyUserId) {
+        return applicationRepository.findByStudentId(studentId, org.springframework.data.domain.Pageable.unpaged())
+                .stream()
+                .anyMatch(app -> app.getInternship().getCompany().getUser().getId().equals(companyUserId));
+    }
 
     @Transactional(readOnly = true)
     public Student getStudentByUserId(Long userId) {
@@ -55,6 +63,20 @@ public class StudentService {
     @Transactional
     public StudentProfileDTO updateProfile(Long userId, UpdateStudentProfileRequest request) {
         Student student = getStudentByUserId(userId);
+
+        boolean academicFieldChanged = 
+            (request.getCgpa() != null && !java.util.Objects.equals(student.getCgpa(), request.getCgpa())) ||
+            (request.getBranch() != null && !java.util.Objects.equals(student.getBranch(), request.getBranch())) ||
+            (request.getRollNumber() != null && !java.util.Objects.equals(student.getRollNumber(), request.getRollNumber())) ||
+            (request.getActiveBacklogs() != null && !java.util.Objects.equals(student.getActiveBacklogs(), request.getActiveBacklogs())) ||
+            (request.getTotalBacklogs() != null && !java.util.Objects.equals(student.getTotalBacklogs(), request.getTotalBacklogs())) ||
+            (request.getGraduationYear() != null && !java.util.Objects.equals(student.getGraduationYear(), request.getGraduationYear()));
+
+        if (academicFieldChanged && Boolean.TRUE.equals(student.getIsVerified())) {
+            student.setIsVerified(false);
+            auditService.log("STUDENT_ACADEMIC_RECORD_CHANGED", "Student", student.getId(), "VERIFIED", "UNVERIFIED",
+                    "Student modified core academic standing attributes (CGPA/branch/backlogs). Institutional verification reset to unverified.");
+        }
 
         student.setFirstName(request.getFirstName());
         student.setLastName(request.getLastName());

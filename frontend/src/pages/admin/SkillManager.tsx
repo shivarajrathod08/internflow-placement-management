@@ -45,7 +45,7 @@ export const SkillManager: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiClient.get<ApiResponse<SkillItem[]>>('/api/skills/public');
+      const res = await apiClient.get<ApiResponse<SkillItem[]>>('/skills/public');
       if (res.data.success) {
         setSkills(res.data.data);
       }
@@ -77,7 +77,7 @@ export const SkillManager: React.FC = () => {
         .map((a) => a.trim())
         .filter(Boolean);
 
-      const res = await apiClient.post<ApiResponse<SkillItem>>('/api/skills/admin', {
+      const res = await apiClient.post<ApiResponse<SkillItem>>('/skills/admin', {
         canonicalName: newCanonicalName,
         category: newCategory,
         description: newDescription,
@@ -107,7 +107,7 @@ export const SkillManager: React.FC = () => {
       setAddingAlias(true);
       setError(null);
 
-      const res = await apiClient.post(`/api/skills/admin/${aliasSkill.id}/aliases`, {
+      const res = await apiClient.post(`/skills/admin/${aliasSkill.id}/aliases`, {
         alias: aliasInput.trim(),
       });
 

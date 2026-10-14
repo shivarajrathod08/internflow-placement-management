@@ -54,4 +54,16 @@ public class OfferDTO {
                 .createdAt(o.getCreatedAt())
                 .build();
     }
+
+    public BigDecimal getStipendOrSalary() {
+        return ctcOrStipend;
+    }
+
+    public String getOfferedAt() {
+        return offerDate != null ? offerDate.toString() : null;
+    }
+
+    public String getStudentRemarks() {
+        return responseNotes;
+    }
 }

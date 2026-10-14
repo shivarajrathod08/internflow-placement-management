@@ -10,14 +10,6 @@ import java.nio.file.Paths;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-
-    @Value("${app.upload.dir:./uploads}")
-    private String uploadDir;
-
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-        registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:" + uploadPath.toString() + "/");
-    }
+    // Static resource handler for /uploads/** removed to prevent unauthenticated direct file access.
+    // All document downloads are secured via DocumentController /api/documents/{id}/download.
 }

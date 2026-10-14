@@ -44,6 +44,16 @@ public class OfferService {
         Application application = applicationRepository.findById(request.getApplicationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Application", "id", request.getApplicationId()));
 
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (currentUser.getRole() == Role.COMPANY) {
+            Long ownerUserId = application.getInternship().getCompany().getUser().getId();
+            if (!ownerUserId.equals(userId)) {
+                throw new ForbiddenException("You cannot issue offers on behalf of another company");
+            }
+        }
+
         if (offerRepository.existsByApplicationId(request.getApplicationId())) {
             throw new BadRequestException("An offer has already been issued for this application.");
         }
@@ -91,23 +101,47 @@ public class OfferService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        // Students can accept/decline their own offer; Admins/TPOs can record outcomes
+        OfferStatus oldStatus = offer.getStatus();
+        OfferStatus newStatus = request.getStatus();
+
+        // Enforce role-based actions and state transitions
         if (user.getRole() == Role.STUDENT) {
             Student student = studentRepository.findByUserId(userId)
                     .orElseThrow(() -> new ResourceNotFoundException("Student not found for user: " + userId));
             if (!offer.getStudent().getId().equals(student.getId())) {
                 throw new ForbiddenException("You cannot accept or decline another candidate's offer.");
             }
+            if (oldStatus != OfferStatus.OFFERED) {
+                throw new BadRequestException("Offer cannot be responded to in state: " + oldStatus);
+            }
+            if (newStatus != OfferStatus.ACCEPTED && newStatus != OfferStatus.DECLINED) {
+                throw new BadRequestException("Students may only ACCEPT or DECLINE an offer.");
+            }
+        } else if (user.getRole() == Role.COMPANY) {
+            Long companyOwnerId = offer.getCompany().getUser().getId();
+            if (!companyOwnerId.equals(userId)) {
+                throw new ForbiddenException("You can only manage offers for your own company.");
+            }
+            if (newStatus == OfferStatus.REVOKED) {
+                if (oldStatus != OfferStatus.OFFERED && oldStatus != OfferStatus.ACCEPTED) {
+                    throw new BadRequestException("Only OFFERED or ACCEPTED offers can be revoked.");
+                }
+            } else if (newStatus == OfferStatus.JOINED) {
+                if (oldStatus != OfferStatus.ACCEPTED) {
+                    throw new BadRequestException("Only an ACCEPTED offer can be marked as JOINED.");
+                }
+            } else {
+                throw new BadRequestException("Companies can only mark offers as REVOKED or JOINED.");
+            }
         }
 
-        OfferStatus oldStatus = offer.getStatus();
-        offer.setStatus(request.getStatus());
+        offer.setStatus(newStatus);
         offer.setResponseNotes(request.getResponseNotes());
 
         Offer saved = offerRepository.save(offer);
 
         // Update application status
-        if (request.getStatus() == OfferStatus.ACCEPTED) {
+        if (newStatus == OfferStatus.ACCEPTED) {
             offer.getApplication().setCurrentStatus(ApplicationStatus.ACCEPTED);
             applicationRepository.save(offer.getApplication());
 
@@ -120,7 +154,7 @@ public class OfferService {
                     NotificationType.SUCCESS,
                     "/company/applicants"
             );
-        } else if (request.getStatus() == OfferStatus.DECLINED) {
+        } else if (newStatus == OfferStatus.DECLINED) {
             notificationService.createNotification(
                     offer.getCompany().getUser().getId(),
                     "Offer Declined",
@@ -129,10 +163,13 @@ public class OfferService {
                     NotificationType.INFO,
                     "/company/applicants"
             );
+        } else if (newStatus == OfferStatus.JOINED) {
+            offer.getApplication().setCurrentStatus(ApplicationStatus.IN_PROGRESS);
+            applicationRepository.save(offer.getApplication());
         }
 
-        auditService.log("UPDATE_OFFER_STATUS", "Offer", saved.getId(), oldStatus.name(), request.getStatus().name(),
-                "Updated offer status: " + request.getStatus());
+        auditService.log("UPDATE_OFFER_STATUS", "Offer", saved.getId(), oldStatus.name(), newStatus.name(),
+                "Updated offer status: " + newStatus);
 
         return OfferDTO.from(saved);
     }
@@ -152,6 +189,14 @@ public class OfferService {
         Company company = companyRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company profile not found"));
         return offerRepository.findByCompanyIdOrderByOfferDateDesc(company.getId())
+                .stream()
+                .map(OfferDTO::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OfferDTO> getOffersByCompanyEntityId(Long companyId) {
+        return offerRepository.findByCompanyIdOrderByOfferDateDesc(companyId)
                 .stream()
                 .map(OfferDTO::from)
                 .toList();

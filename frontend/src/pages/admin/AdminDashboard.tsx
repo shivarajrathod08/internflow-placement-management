@@ -50,7 +50,7 @@ export const AdminDashboard: React.FC = () => {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get<ApiResponse<AdminAnalytics>>('/api/analytics/admin');
+      const res = await apiClient.get<ApiResponse<AdminAnalytics>>('/analytics/admin');
       if (res.data.success) {
         setAnalytics(res.data.data);
       }

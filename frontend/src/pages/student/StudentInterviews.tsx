@@ -17,7 +17,7 @@ export const StudentInterviews: React.FC = () => {
   const fetchInterviews = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get<ApiResponse<Interview[]>>('/api/interviews/student/me');
+      const res = await apiClient.get<ApiResponse<Interview[]>>('/interviews/student/me');
       if (res.data.success) {
         setInterviews(res.data.data);
       }

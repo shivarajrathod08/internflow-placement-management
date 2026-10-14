@@ -3,5 +3,7 @@ package com.internflow.modules.offer;
 public enum OfferStatus {
     OFFERED,
     ACCEPTED,
-    DECLINED
+    DECLINED,
+    JOINED,
+    REVOKED
 }

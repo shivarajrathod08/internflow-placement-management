@@ -9,6 +9,9 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
+    if (config.url && config.url.startsWith('/api/')) {
+      config.url = config.url.substring(4);
+    }
     const token = localStorage.getItem('internflow_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

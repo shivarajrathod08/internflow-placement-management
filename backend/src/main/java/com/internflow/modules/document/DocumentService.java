@@ -199,7 +199,16 @@ public class DocumentService {
                 if (!companyOwnerId.equals(userId)) {
                     throw new ForbiddenException("Access denied to candidate document");
                 }
+            } else {
+                boolean hasApplicationToCompany = applicationRepository.findByStudentId(document.getStudent().getId(), org.springframework.data.domain.Pageable.unpaged())
+                        .stream()
+                        .anyMatch(app -> app.getInternship().getCompany().getUser().getId().equals(userId));
+                if (!hasApplicationToCompany) {
+                    throw new ForbiddenException("Access denied. Candidate has not applied to your organization.");
+                }
             }
+        } else if (role != Role.ADMIN && role != Role.TPO && role != Role.FACULTY_COORDINATOR) {
+            throw new ForbiddenException("Unauthorized to access student documents");
         }
 
         try {

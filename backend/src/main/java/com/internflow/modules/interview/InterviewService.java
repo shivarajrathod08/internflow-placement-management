@@ -11,6 +11,7 @@ import com.internflow.modules.notification.NotificationService;
 import com.internflow.modules.notification.NotificationType;
 import com.internflow.modules.student.Student;
 import com.internflow.modules.student.StudentRepository;
+import com.internflow.modules.user.Role;
 import com.internflow.modules.user.User;
 import com.internflow.modules.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -108,8 +109,13 @@ public class InterviewService {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Interview", "id", interviewId));
 
-        if (!interview.getApplication().getInternship().getCompany().getUser().getId().equals(userId)) {
-            throw new ForbiddenException("Access denied");
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        boolean isCompanyOwner = interview.getApplication().getInternship().getCompany().getUser().getId().equals(userId);
+        boolean isAdminOrTpo = currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.TPO;
+        if (!isCompanyOwner && !isAdminOrTpo) {
+            throw new ForbiddenException("Access denied to reschedule interview");
         }
 
         interview.setScheduledAt(newTime);
@@ -140,8 +146,13 @@ public class InterviewService {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Interview", "id", interviewId));
 
-        if (!interview.getApplication().getInternship().getCompany().getUser().getId().equals(userId)) {
-            throw new ForbiddenException("Access denied");
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        boolean isCompanyOwner = interview.getApplication().getInternship().getCompany().getUser().getId().equals(userId);
+        boolean isAdminOrTpo = currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.TPO;
+        if (!isCompanyOwner && !isAdminOrTpo) {
+            throw new ForbiddenException("Access denied to submit interview feedback");
         }
 
         interview.setStatus(request.getStatus());
@@ -156,7 +167,6 @@ public class InterviewService {
             app.setCurrentStatus(ApplicationStatus.INTERVIEW_COMPLETED);
             applicationRepository.save(app);
 
-            User currentUser = userRepository.findById(userId).orElse(null);
             ApplicationStatusHistory history = ApplicationStatusHistory.builder()
                     .application(app)
                     .fromStatus(ApplicationStatus.INTERVIEW_SCHEDULED)

@@ -1,17 +1,12 @@
 # Build Stage
-FROM eclipse-temurin:21-jdk-jammy AS build
+FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
-COPY mvnw .
-COPY .mvn .mvn
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Download dependencies
-RUN ./mvnw dependency:go-offline -B
-
-# Copy source and build jar
 COPY src src
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
 
 # Runtime Stage
 FROM eclipse-temurin:21-jre-jammy

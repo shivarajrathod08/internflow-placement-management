@@ -45,7 +45,7 @@ export const InternshipApprovals: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const endpoint = filterMode === 'PENDING' ? '/api/internships/admin/pending' : '/api/internships/admin/all';
+      const endpoint = filterMode === 'PENDING' ? '/internships/admin/pending' : '/internships/admin/all';
       const res = await apiClient.get<ApiResponse<PageResponse<Internship>>>(
         `${endpoint}?page=${page}&size=10`
       );
@@ -73,7 +73,7 @@ export const InternshipApprovals: React.FC = () => {
   const handleApprove = async (internship: Internship) => {
     try {
       setError(null);
-      const res = await apiClient.post(`/api/internships/admin/${internship.id}/approve`, {
+      const res = await apiClient.post(`/internships/admin/${internship.id}/approve`, {
         approved: true,
       });
       if (res.data.success) {
@@ -93,7 +93,7 @@ export const InternshipApprovals: React.FC = () => {
       setSubmittingReject(true);
       setError(null);
 
-      const res = await apiClient.post(`/api/internships/admin/${rejectItem.id}/approve`, {
+      const res = await apiClient.post(`/internships/admin/${rejectItem.id}/approve`, {
         approved: false,
         rejectionReason,
       });

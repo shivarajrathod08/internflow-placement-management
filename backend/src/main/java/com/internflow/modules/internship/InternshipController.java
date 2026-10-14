@@ -37,11 +37,12 @@ public class InternshipController {
     @GetMapping("/public/{id}")
     @Operation(summary = "Get single published internship details")
     public ResponseEntity<ApiResponse<InternshipDTO>> getPublishedById(@PathVariable Long id) {
-        InternshipDTO dto = internshipService.getInternshipById(id);
+        InternshipDTO dto = internshipService.getPublishedInternshipById(id);
         return ResponseEntity.ok(ApiResponse.ok(dto));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get internship details by ID")
     public ResponseEntity<ApiResponse<InternshipDTO>> getById(@PathVariable Long id) {
         InternshipDTO dto = internshipService.getInternshipById(id);

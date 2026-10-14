@@ -69,7 +69,7 @@ export const ApplicantsPipeline: React.FC = () => {
 
   const fetchPostings = async () => {
     try {
-      const res = await apiClient.get<ApiResponse<PageResponse<Internship>>>('/api/internships/company?size=100');
+      const res = await apiClient.get<ApiResponse<PageResponse<Internship>>>('/internships/company?size=100');
       if (res.data.success) {
         setPostings(res.data.data.content);
       }
@@ -83,9 +83,9 @@ export const ApplicantsPipeline: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      let url = '/api/applications/company';
+      let url = '/applications/company';
       if (selectedInternshipId !== 'all') {
-        url = `/api/applications/company/internships/${selectedInternshipId}`;
+        url = `/applications/company/internships/${selectedInternshipId}`;
       }
 
       const res = await apiClient.get<ApiResponse<PageResponse<Application>>>(
@@ -122,7 +122,7 @@ export const ApplicantsPipeline: React.FC = () => {
       setError(null);
       setSuccess(null);
 
-      const res = await apiClient.patch<ApiResponse<Application>>(`/api/applications/${appId}/status`, {
+      const res = await apiClient.patch<ApiResponse<Application>>(`/applications/${appId}/status`, {
         targetStatus,
         notes: `Updated status to ${targetStatus} via Recruiter Pipeline.`,
       });
@@ -146,7 +146,7 @@ export const ApplicantsPipeline: React.FC = () => {
       setScheduling(true);
       setError(null);
 
-      const res = await apiClient.post('/api/interviews/schedule', {
+      const res = await apiClient.post('/interviews/schedule', {
         applicationId: scheduleModalApp.id,
         scheduledAt: new Date(scheduledAt).toISOString(),
         meetingLink,

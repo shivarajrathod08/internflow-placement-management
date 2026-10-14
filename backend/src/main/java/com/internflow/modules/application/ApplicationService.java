@@ -39,6 +39,7 @@ public class ApplicationService {
     private final MatchingEngineService matchingEngineService;
     private final NotificationService notificationService;
     private final AuditService auditService;
+    private final com.internflow.modules.company.CompanyRepository companyRepository;
     private final com.internflow.modules.eligibility.EligibilityEngineService eligibilityEngineService;
 
     @Transactional
@@ -238,10 +239,10 @@ public class ApplicationService {
 
     @Transactional(readOnly = true)
     public Page<ApplicationDTO> getCompanyApplications(Long userId, Pageable pageable) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        com.internflow.modules.company.Company company = companyRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company profile not found for user id: " + userId));
 
-        return applicationRepository.findByCompanyId(user.getId(), pageable).map(ApplicationDTO::from);
+        return applicationRepository.findByCompanyId(company.getId(), pageable).map(ApplicationDTO::from);
     }
 
     @Transactional(readOnly = true)

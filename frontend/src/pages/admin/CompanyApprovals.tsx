@@ -46,7 +46,7 @@ export const CompanyApprovals: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const endpoint = statusFilter === 'PENDING' ? '/api/company/admin/pending' : '/api/company/admin/all';
+      const endpoint = statusFilter === 'PENDING' ? '/company/admin/pending' : '/company/admin/all';
       const res = await apiClient.get<ApiResponse<PageResponse<CompanyProfile>>>(
         `${endpoint}?page=${page}&size=10`
       );
@@ -83,7 +83,7 @@ export const CompanyApprovals: React.FC = () => {
       setSubmittingAction(true);
       setError(null);
 
-      const res = await apiClient.post(`/api/company/admin/${selectedCompany.id}/verify`, {
+      const res = await apiClient.post(`/company/admin/${selectedCompany.id}/verify`, {
         status: actionStatus,
         notes: actionNotes,
       });
