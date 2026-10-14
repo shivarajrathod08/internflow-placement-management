@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 16 Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: internflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: internflow_db
+      POSTGRES_USER: internflow_user
+      POSTGRES_PASSWORD: internflow_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U internflow_user -d internflow_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internflow-net
+
+  # Spring Boot 3 Backend Service
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/backend.Dockerfile
+    container_name: internflow-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/internflow_db
+      DB_USERNAME: internflow_user
+      DB_PASSWORD: internflow_password
+      JWT_SECRET: c2VjdXJlLWVudGVycHJpc2Utand0LXNlY3JldC1rZXktaW50ZXJuZmxvdy0yMDI2LXByb2R1Y3Rpb24tbXVzdC1iZS0yNTYtYml0cw==
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - doc_storage:/app/storage
+    networks:
+      - internflow-net
+
+  # React 18 / Vite Frontend with NGINX Reverse Proxy
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/frontend.Dockerfile
+    container_name: internflow-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "3000:80"
+    networks:
+      - internflow-net
+
+volumes:
+  postgres_data:
+    driver: local
+  doc_storage:
+    driver: local
+
+networks:
+  internflow-net:
+    driver: bridge
