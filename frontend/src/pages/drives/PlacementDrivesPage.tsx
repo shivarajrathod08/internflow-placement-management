@@ -169,19 +169,20 @@ export const PlacementDrivesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
+      {/* Header Banner - Clean Professional Light Theme with subtle indigo accents */}
+      <div className="bg-gradient-to-br from-white via-indigo-50/40 to-slate-50/80 rounded-3xl p-8 text-slate-900 border border-indigo-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute -right-12 -top-12 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs uppercase tracking-wider font-semibold text-indigo-300">
+            <span className="text-xs uppercase tracking-wider font-bold text-indigo-600">
               Training & Placement Office
             </span>
-            <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-xs px-2.5 py-0.5 rounded-full font-medium">
+            <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs px-2.5 py-0.5 rounded-full font-semibold">
               Institutional Recruitment Operations
             </span>
           </div>
-          <h1 className="text-3xl font-extrabold">Placement Drives & Cohorts</h1>
-          <p className="text-slate-300 text-sm mt-1 max-w-xl">
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Placement Drives & Cohorts</h1>
+          <p className="text-slate-600 text-sm mt-1 max-w-xl">
             Orchestrate centralized placement drives, define cohort eligibility rules, and track candidate qualification in real-time.
           </p>
         </div>
@@ -189,7 +190,7 @@ export const PlacementDrivesPage: React.FC = () => {
         {isStaffOrAdmin && (
           <button
             onClick={() => setCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/30"
+            className="relative z-10 inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/20 active:scale-95"
           >
             <Plus className="w-4 h-4" />
             Launch Placement Drive
@@ -212,7 +213,7 @@ export const PlacementDrivesPage: React.FC = () => {
       )}
 
       {/* Filter Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div className="flex items-center gap-2">
           {['ALL', 'ONGOING', 'UPCOMING', 'COMPLETED'].map((st) => (
             <button
@@ -220,15 +221,15 @@ export const PlacementDrivesPage: React.FC = () => {
               onClick={() => setFilterStatus(st)}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                 filterStatus === st
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
+                  : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 border border-slate-200'
               }`}
             >
               {st}
             </button>
           ))}
         </div>
-        <div className="text-xs text-gray-500 font-medium">
+        <div className="text-xs text-slate-500 font-medium">
           Showing {filteredDrives.length} of {drives.length} drive cohorts
         </div>
       </div>
@@ -237,14 +238,16 @@ export const PlacementDrivesPage: React.FC = () => {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-48 bg-white rounded-2xl border border-gray-100 animate-pulse" />
+            <div key={i} className="h-48 bg-white rounded-2xl border border-slate-200/80 animate-pulse" />
           ))}
         </div>
       ) : filteredDrives.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center space-y-4">
-          <Calendar className="w-12 h-12 text-gray-300 mx-auto" />
-          <h3 className="font-bold text-gray-900 text-lg">No placement drives found</h3>
-          <p className="text-gray-500 text-xs max-w-md mx-auto">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center space-y-4 shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mx-auto">
+            <Calendar className="w-8 h-8" />
+          </div>
+          <h3 className="font-bold text-slate-900 text-lg">No placement drives found</h3>
+          <p className="text-slate-500 text-xs max-w-md mx-auto">
             {isStaffOrAdmin
               ? 'Click "Launch Placement Drive" to set up your institutional recruitment drive with batch criteria and branch restrictions.'
               : 'Placement drives scheduled for your batch will appear here.'}
@@ -255,48 +258,48 @@ export const PlacementDrivesPage: React.FC = () => {
           {filteredDrives.map((drive) => (
             <div
               key={drive.id}
-              className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+              className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex flex-col justify-between group"
             >
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50/80 border border-indigo-100 px-2.5 py-0.5 rounded-md">
                       Batch {drive.batchYear} • AY {drive.academicYear}
                     </span>
-                    <h3 className="text-lg font-bold text-gray-900 mt-1">{drive.name}</h3>
+                    <h3 className="text-lg font-bold text-slate-900 mt-1.5">{drive.name}</h3>
                   </div>
                   {getStatusBadge(drive.status)}
                 </div>
 
                 {drive.description && (
-                  <p className="text-xs text-gray-600 line-clamp-2">{drive.description}</p>
+                  <p className="text-xs text-slate-600 line-clamp-2">{drive.description}</p>
                 )}
 
                 {/* Eligibility Criteria Summary */}
-                <div className="p-3 bg-slate-50 rounded-xl space-y-2 border border-slate-100">
-                  <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                <div className="p-3.5 bg-slate-50/80 rounded-xl space-y-2 border border-slate-200/60">
+                  <div className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                     Mandatory Qualification Thresholds
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div>
-                      <span className="text-gray-400 block text-[10px]">Min CGPA</span>
-                      <span className="font-bold text-gray-800">{drive.minCgpa ?? 'N/A'}</span>
+                      <span className="text-slate-500 block text-[10px] font-medium">Min CGPA</span>
+                      <span className="font-bold text-slate-900">{drive.minCgpa ?? 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="text-gray-400 block text-[10px]">Max Backlogs</span>
-                      <span className="font-bold text-gray-800">{drive.maxBacklogs ?? 0}</span>
+                      <span className="text-slate-500 block text-[10px] font-medium">Max Backlogs</span>
+                      <span className="font-bold text-slate-900">{drive.maxBacklogs ?? 0}</span>
                     </div>
                     <div>
-                      <span className="text-gray-400 block text-[10px]">Timeline</span>
-                      <span className="font-bold text-gray-800 truncate block">
+                      <span className="text-slate-500 block text-[10px] font-medium">Timeline</span>
+                      <span className="font-bold text-slate-900 truncate block">
                         {drive.startDate}
                       </span>
                     </div>
                   </div>
                   {drive.eligibleBranches && (
-                    <div className="text-[11px] text-gray-600 pt-1 border-t border-slate-200">
-                      <span className="font-semibold text-gray-500">Branches: </span>
+                    <div className="text-[11px] text-slate-700 pt-1.5 border-t border-slate-200/60">
+                      <span className="font-semibold text-slate-500">Branches: </span>
                       {drive.eligibleBranches}
                     </div>
                   )}
@@ -304,10 +307,10 @@ export const PlacementDrivesPage: React.FC = () => {
               </div>
 
               {/* Action Buttons & Status Controls */}
-              <div className="pt-4 mt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+              <div className="pt-4 mt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                 <button
                   onClick={() => handleViewEligibleCandidates(drive)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100/80 border border-indigo-100 transition-colors"
                 >
                   <Users className="w-3.5 h-3.5" />
                   Eligible Candidates
@@ -318,7 +321,7 @@ export const PlacementDrivesPage: React.FC = () => {
                     {drive.status === 'UPCOMING' && (
                       <button
                         onClick={() => handleUpdateStatus(drive.id, 'ONGOING')}
-                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
+                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
                       >
                         Start Drive
                       </button>
@@ -326,7 +329,7 @@ export const PlacementDrivesPage: React.FC = () => {
                     {drive.status === 'ONGOING' && (
                       <button
                         onClick={() => handleUpdateStatus(drive.id, 'COMPLETED')}
-                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-white hover:bg-slate-900"
+                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-white hover:bg-slate-900 shadow-sm"
                       >
                         Mark Completed
                       </button>
@@ -341,16 +344,18 @@ export const PlacementDrivesPage: React.FC = () => {
 
       {/* Launch Drive Modal */}
       {createModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-5 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-indigo-600" />
+              <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                  <Briefcase className="w-4 h-4" />
+                </div>
                 Launch Institutional Placement Drive
               </h3>
               <button
                 onClick={() => setCreateModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-xl transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -358,30 +363,30 @@ export const PlacementDrivesPage: React.FC = () => {
 
             <form onSubmit={handleCreateDrive} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Drive Name *</label>
+                <label className="block text-xs font-bold text-slate-900 mb-1.5">Drive Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Annual Campus Placement Drive 2026"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Academic Year</label>
+                  <label className="block text-xs font-bold text-slate-900 mb-1.5">Academic Year</label>
                   <input
                     type="text"
                     required
                     value={formData.academicYear}
                     onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Batch Year</label>
+                  <label className="block text-xs font-bold text-slate-900 mb-1.5">Batch Year</label>
                   <input
                     type="number"
                     required
@@ -389,36 +394,36 @@ export const PlacementDrivesPage: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, batchYear: parseInt(e.target.value) || 2026 })
                     }
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Start Date *</label>
+                  <label className="block text-xs font-bold text-slate-900 mb-1.5">Start Date *</label>
                   <input
                     type="date"
                     required
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">End Date</label>
+                  <label className="block text-xs font-bold text-slate-900 mb-1.5">End Date</label>
                   <input
                     type="date"
                     value={formData.endDate || ''}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Min CGPA</label>
+                  <label className="block text-xs font-bold text-slate-900 mb-1.5">Min CGPA</label>
                   <input
                     type="number"
                     step="0.1"
@@ -426,24 +431,24 @@ export const PlacementDrivesPage: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, minCgpa: parseFloat(e.target.value) || 0 })
                     }
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Max Active Backlogs</label>
+                  <label className="block text-xs font-bold text-slate-900 mb-1.5">Max Active Backlogs</label>
                   <input
                     type="number"
                     value={formData.maxBacklogs ?? 0}
                     onChange={(e) =>
                       setFormData({ ...formData, maxBacklogs: parseInt(e.target.value) || 0 })
                     }
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label className="block text-xs font-bold text-slate-900 mb-1.5">
                   Eligible Branches (comma separated)
                 </label>
                 <input
@@ -451,18 +456,18 @@ export const PlacementDrivesPage: React.FC = () => {
                   value={formData.eligibleBranches || ''}
                   onChange={(e) => setFormData({ ...formData, eligibleBranches: e.target.value })}
                   placeholder="Computer Science, Information Technology, Electronics"
-                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Description / Guidelines</label>
+                <label className="block text-xs font-bold text-slate-900 mb-1.5">Description / Guidelines</label>
                 <textarea
                   rows={2}
                   value={formData.description || ''}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Key instructions for companies and participating students..."
-                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                 />
               </div>
 
@@ -470,13 +475,13 @@ export const PlacementDrivesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setCreateModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl"
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-md"
+                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 active:scale-95 transition-all"
                 >
                   Launch Drive
                 </button>
@@ -488,22 +493,24 @@ export const PlacementDrivesPage: React.FC = () => {
 
       {/* Eligible Candidates Modal */}
       {candidatesModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <div>
-                <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                    <GraduationCap className="w-5 h-5" />
+                  </div>
                   Eligible Candidates Pool
                 </h3>
-                <p className="text-xs text-gray-500">
-                  Drive: <span className="font-semibold text-gray-800">{selectedDrive?.name}</span>{' '}
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Drive: <span className="font-semibold text-slate-800">{selectedDrive?.name}</span>{' '}
                   (Min CGPA: {selectedDrive?.minCgpa}, Max Backlogs: {selectedDrive?.maxBacklogs})
                 </p>
               </div>
               <button
                 onClick={() => setCandidatesModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-xl transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -511,11 +518,11 @@ export const PlacementDrivesPage: React.FC = () => {
 
             <div className="flex-1 overflow-y-auto space-y-3">
               {loadingCandidates ? (
-                <div className="p-8 text-center text-xs text-gray-400">
+                <div className="p-8 text-center text-xs text-slate-400">
                   Evaluating criteria against student profiles...
                 </div>
               ) : eligibleStudents.length === 0 ? (
-                <div className="p-8 text-center text-xs text-gray-400">
+                <div className="p-8 text-center text-xs text-slate-400">
                   No students in the system currently satisfy the criteria for this drive.
                 </div>
               ) : (
@@ -524,7 +531,7 @@ export const PlacementDrivesPage: React.FC = () => {
                     <div key={st.id} className="py-3 flex items-center justify-between gap-4">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-gray-900">
+                          <span className="font-bold text-xs text-slate-900">
                             {st.firstName} {st.lastName}
                           </span>
                           {st.isVerified && (
@@ -533,15 +540,15 @@ export const PlacementDrivesPage: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-gray-500">
-                          Roll: <span className="font-medium text-gray-700">{st.rollNumber || 'N/A'}</span> •{' '}
+                        <p className="text-[11px] text-slate-500">
+                          Roll: <span className="font-medium text-slate-800">{st.rollNumber || 'N/A'}</span> •{' '}
                           {st.branch || 'Branch N/A'} • Class of {st.graduationYear || 'N/A'}
                         </p>
                       </div>
 
                       <div className="text-right">
                         <div className="text-xs font-bold text-indigo-600">CGPA: {st.cgpa ?? 'N/A'}</div>
-                        <div className="text-[10px] text-gray-400">
+                        <div className="text-[10px] text-slate-400">
                           Active Backlogs: {st.activeBacklogs ?? 0}
                         </div>
                       </div>
@@ -551,11 +558,11 @@ export const PlacementDrivesPage: React.FC = () => {
               )}
             </div>
 
-            <div className="pt-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
+            <div className="pt-3 border-t border-gray-100 flex justify-between items-center text-xs text-slate-500">
               <span>{eligibleStudents.length} candidate(s) meet all criteria</span>
               <button
                 onClick={() => setCandidatesModalOpen(false)}
-                className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-xs"
+                className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs transition-colors"
               >
                 Close
               </button>

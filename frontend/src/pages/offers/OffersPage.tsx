@@ -402,10 +402,10 @@ export const OffersPage: React.FC = () => {
 
       {/* Decline Offer Modal */}
       {rejectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="font-bold text-gray-900 text-base">Decline Employment Offer</h3>
-            <p className="text-xs text-gray-500">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 duration-200">
+            <h3 className="font-bold text-slate-900 text-base">Decline Employment Offer</h3>
+            <p className="text-xs text-slate-500">
               Are you sure you wish to decline this offer? Please provide feedback or reason for the company and placement cell records.
             </p>
             <textarea
@@ -413,20 +413,20 @@ export const OffersPage: React.FC = () => {
               value={rejectionRemarks}
               onChange={(e) => setRejectionRemarks(e.target.value)}
               placeholder="e.g. Accepted higher package offer / Pursuing higher studies..."
-              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 focus:outline-none transition-colors"
             />
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setRejectModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl"
+                className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => rejectOfferId && handleUpdateStatus(rejectOfferId, 'REJECTED', rejectionRemarks)}
-                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl"
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md transition-all active:scale-95"
               >
                 Confirm Decline
               </button>
@@ -437,16 +437,18 @@ export const OffersPage: React.FC = () => {
 
       {/* Issue Formal Offer Modal (for Company) */}
       {issueModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-                <Award className="w-5 h-5 text-indigo-600" />
+              <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                  <Award className="w-5 h-5" />
+                </div>
                 Issue Formal Candidate Offer
               </h3>
               <button
                 onClick={() => setIssueModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-xl transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -454,7 +456,7 @@ export const OffersPage: React.FC = () => {
 
             <form onSubmit={handleIssueOffer} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label className="block text-xs font-bold text-slate-900 mb-1.5">
                   Application ID *
                 </label>
                 <input
@@ -465,25 +467,25 @@ export const OffersPage: React.FC = () => {
                   onChange={(e) =>
                     setIssueForm({ ...issueForm, applicationId: parseInt(e.target.value) || 0 })
                   }
-                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Designation *</label>
+                <label className="block text-xs font-bold text-slate-900 mb-1.5">Designation *</label>
                 <input
                   type="text"
                   required
                   value={issueForm.designation}
                   onChange={(e) => setIssueForm({ ...issueForm, designation: e.target.value })}
                   placeholder="e.g. Associate Software Engineer / Frontend Intern"
-                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-900 mb-1.5">
                     Compensation / Monthly Stipend (₹) *
                   </label>
                   <input
@@ -496,33 +498,34 @@ export const OffersPage: React.FC = () => {
                         stipendOrSalary: parseInt(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Location</label>
+                  <label className="block text-xs font-bold text-slate-900 mb-1.5">Location</label>
                   <input
                     type="text"
                     value={issueForm.location}
                     onChange={(e) => setIssueForm({ ...issueForm, location: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                    placeholder="e.g. Bangalore, India"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Joining Date *</label>
+                  <label className="block text-xs font-bold text-slate-900 mb-1.5">Joining Date *</label>
                   <input
                     type="date"
                     required
                     value={issueForm.joiningDate}
                     onChange={(e) => setIssueForm({ ...issueForm, joiningDate: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-900 mb-1.5">
                     Offer Letter Document URL
                   </label>
                   <input
@@ -530,7 +533,7 @@ export const OffersPage: React.FC = () => {
                     placeholder="https://.../offer-letter.pdf"
                     value={issueForm.offerLetterUrl || ''}
                     onChange={(e) => setIssueForm({ ...issueForm, offerLetterUrl: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -539,13 +542,13 @@ export const OffersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIssueModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl"
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-md"
+                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 active:scale-95 transition-all"
                 >
                   Dispatch Offer
                 </button>
