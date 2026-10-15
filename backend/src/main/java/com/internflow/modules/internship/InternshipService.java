@@ -214,6 +214,11 @@ public class InternshipService {
     }
 
     private void verifyCompanyOwnership(Internship internship, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.TPO) {
+            return;
+        }
         if (!internship.getCompany().getUser().getId().equals(userId)) {
             throw new ForbiddenException("You do not have permission to modify this internship posting");
         }

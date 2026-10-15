@@ -75,7 +75,9 @@ public class PlacementDriveController {
     @Operation(summary = "List eligible student candidates for this placement drive")
     public ResponseEntity<ApiResponse<List<StudentProfileDTO>>> getEligibleCandidates(
             @PathVariable Long id) {
-        List<StudentProfileDTO> candidates = driveService.getEligibleCandidates(id);
+        Long userId = SecurityUtils.getCurrentUserId();
+        com.internflow.modules.user.Role role = SecurityUtils.getCurrentUserRole();
+        List<StudentProfileDTO> candidates = driveService.getEligibleCandidates(id, userId, role);
         return ResponseEntity.ok(ApiResponse.ok(candidates));
     }
 }

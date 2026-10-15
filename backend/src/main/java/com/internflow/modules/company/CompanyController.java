@@ -23,7 +23,7 @@ public class CompanyController {
     private final CompanyService companyService;
 
     @GetMapping("/profile")
-    @PreAuthorize("hasRole('COMPANY')")
+    @PreAuthorize("hasAnyRole('COMPANY', 'RECRUITER')")
     @Operation(summary = "Get current recruiter's company profile")
     public ResponseEntity<ApiResponse<CompanyProfileDTO>> getMyCompanyProfile() {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -32,7 +32,7 @@ public class CompanyController {
     }
 
     @PutMapping("/profile")
-    @PreAuthorize("hasRole('COMPANY')")
+    @PreAuthorize("hasAnyRole('COMPANY', 'RECRUITER')")
     @Operation(summary = "Update current recruiter's company profile details")
     public ResponseEntity<ApiResponse<CompanyProfileDTO>> updateMyCompanyProfile(@Valid @RequestBody UpdateCompanyProfileRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -47,9 +47,9 @@ public class CompanyController {
         return ResponseEntity.ok(ApiResponse.ok(profile));
     }
 
-    // Admin endpoints for company management
+    // Admin/TPO endpoints for company management
     @GetMapping("/admin/pending")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TPO')")
     @Operation(summary = "List companies pending administrator KYC verification")
     public ResponseEntity<ApiResponse<PageResponse<CompanyProfileDTO>>> getPendingCompanies(
             @PageableDefault(size = 10) Pageable pageable) {
@@ -58,8 +58,8 @@ public class CompanyController {
     }
 
     @GetMapping("/admin/all")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "List all registered companies (Admin)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TPO')")
+    @Operation(summary = "List all registered companies (Admin/TPO)")
     public ResponseEntity<ApiResponse<PageResponse<CompanyProfileDTO>>> getAllCompanies(
             @PageableDefault(size = 10) Pageable pageable) {
         Page<CompanyProfileDTO> page = companyService.getAllCompanies(pageable);
@@ -67,8 +67,8 @@ public class CompanyController {
     }
 
     @PostMapping("/admin/{companyId}/verify")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Approve, reject, or suspend a company (Admin)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TPO')")
+    @Operation(summary = "Approve, reject, or suspend a company (Admin/TPO)")
     public ResponseEntity<ApiResponse<CompanyProfileDTO>> verifyCompany(
             @PathVariable Long companyId,
             @Valid @RequestBody VerifyCompanyRequest request) {

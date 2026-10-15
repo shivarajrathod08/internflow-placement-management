@@ -68,7 +68,7 @@ public class DocumentController {
     }
 
     @GetMapping("/admin/pending")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TPO')")
     @Operation(summary = "Get all documents awaiting administrator verification")
     public ResponseEntity<ApiResponse<PageResponse<DocumentDTO>>> getPendingDocuments(
             @PageableDefault(size = 10, sort = "uploadedAt") Pageable pageable) {
@@ -77,7 +77,7 @@ public class DocumentController {
     }
 
     @PostMapping("/admin/{id}/verify")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TPO')")
     @Operation(summary = "Approve or reject a document (Admin)")
     public ResponseEntity<ApiResponse<DocumentDTO>> verifyDocument(
             @PathVariable Long id,

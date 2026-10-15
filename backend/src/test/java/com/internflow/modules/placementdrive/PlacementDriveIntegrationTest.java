@@ -52,6 +52,35 @@ class PlacementDriveIntegrationTest {
         for (StudentProfileDTO s : candidates) {
             assertTrue(s.getCgpa().compareTo(new BigDecimal("8.00")) >= 0);
             assertEquals(0, s.getActiveBacklogs());
+            assertTrue(s.getIsVerified(), "Only institutional verified students should appear in placement drive shortlist");
         }
+    }
+
+    @Test
+    @DisplayName("Should exclude unverified students from placement drive candidate shortlist")
+    void testUnverifiedStudentExcludedFromCandidates() {
+        PlacementDrive drive = driveRepository.findById(1L).orElseThrow();
+        List<StudentProfileDTO> candidates = driveService.getEligibleCandidates(drive.getId());
+        for (StudentProfileDTO s : candidates) {
+            assertTrue(s.getIsVerified(), "Candidate must have isVerified = true");
+        }
+    }
+
+    @Test
+    @DisplayName("Should prevent cross-company access to private placement drive candidate pool")
+    void testCrossCompanyDriveAccess() {
+        // Drive 1 is owned by Google (company 1, user 2)
+        PlacementDrive drive = driveRepository.findById(1L).orElseThrow();
+        assertNotNull(drive.getCompany());
+
+        // Recruiter from another company (user 3, NextGen AI) attempts to view candidates
+        assertThrows(com.internflow.exception.ForbiddenException.class, () ->
+                driveService.getEligibleCandidates(drive.getId(), 3L, com.internflow.modules.user.Role.COMPANY));
+
+        // Owner (user 2) or TPO should succeed
+        assertDoesNotThrow(() ->
+                driveService.getEligibleCandidates(drive.getId(), 2L, com.internflow.modules.user.Role.COMPANY));
+        assertDoesNotThrow(() ->
+                driveService.getEligibleCandidates(drive.getId(), 8L, com.internflow.modules.user.Role.TPO));
     }
 }

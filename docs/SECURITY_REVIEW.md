@@ -65,6 +65,17 @@ InternFlow is engineered according to the principle of **Defense-in-Depth**, pri
   - Companies can transition accepted offers to `JOINED` or revoke offers to `REVOKED`.
   - Illegal status transitions throw a `ValidationException` (HTTP 400).
 
+### 3.4 Competitor Offer Data Isolation / BOLA Defense (DEF-04)
+- **Vulnerability Remediated:** Previously, `GET /api/offers/company/{companyId}` permitted any authenticated recruiter to query salary details, CTC figures, and candidate offers belonging to competitor organizations simply by changing the `companyId` path parameter.
+- **Remediation Enforced:**
+  - In `OfferService.java`, the querying user's linked company ID is resolved via `companyRepository.findByUserId(userId)`.
+  - If the caller possesses role `COMPANY` or `RECRUITER`, the service verifies that `company.getId().equals(companyId)`. Any cross-company query immediately raises a `ForbiddenException` (HTTP 403).
+  - Only campus administrative officers (`ROLE_ADMIN`, `ROLE_TPO`) are permitted cross-company offer aggregation across the institution.
+
+### 3.5 Drive Candidate Pool Privacy & Verification Enforcement (DEF-07)
+- In `PlacementDriveService.getEligibleCandidates`, company-specific drives are restricted: recruiters from Company A cannot query eligible candidate rosters for drives sponsored by Company B.
+- Unverified student accounts (`isVerified != true`) are strictly filtered out from eligible drive rosters to eliminate fraudulent candidate selections.
+
 ---
 
 ## 4. Academic Record Integrity & Eligibility Defense (ELIG-01)
@@ -82,9 +93,10 @@ InternFlow is engineered according to the principle of **Defense-in-Depth**, pri
 - Wildcard CORS (`allowedOrigins("*")`) has been completely removed.
 - Allowed origins are read from `app.cors.allowed-origins`, defaulting to trusted institutional frontends (e.g., `http://localhost:5173`, `http://localhost:3000`).
 
-### 5.2 Seeder & Environment Isolation (SEC-01)
+### 5.2 Seeder & Environment Isolation (SEC-01 & DEF-08)
 - Demo data generation in `DemoDataInitializer.java` is annotated with `@Profile("local")` and guarded by `@ConditionalOnProperty(name = "app.demo.seed-enabled", havingValue = "true")`.
 - Production runs (`SPRING_PROFILES_ACTIVE=prod`) completely omit this bean from the Spring application context, ensuring zero risk of demo account injection or credential disclosure in production logs.
+- Additionally, `ProductionSecuritySanitizer.java` runs on container boot in the `prod` profile, proactively querying and deactivating (`isActive = false`) any residual or unrotated default demonstration accounts seeded in historical migrations (`V3__seed_demo_platform_data.sql`), preventing default password exploitation (`Password@123`).
 
 ---
 

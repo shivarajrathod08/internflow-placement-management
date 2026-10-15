@@ -34,7 +34,13 @@ public final class SecurityUtils {
     }
 
     public static boolean isCompany() {
-        return getCurrentUserRole() == Role.COMPANY;
+        Role role = getCurrentUserRole();
+        return role == Role.COMPANY || role == Role.RECRUITER;
+    }
+
+    public static boolean isStaff() {
+        Role role = getCurrentUserRole();
+        return role == Role.ADMIN || role == Role.TPO || role == Role.FACULTY_COORDINATOR;
     }
 
     public static boolean isStudent() {

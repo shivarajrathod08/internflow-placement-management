@@ -47,7 +47,7 @@ public class OfferService {
         User currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        if (currentUser.getRole() == Role.COMPANY) {
+        if (currentUser.getRole() == Role.COMPANY || currentUser.getRole() == Role.RECRUITER) {
             Long ownerUserId = application.getInternship().getCompany().getUser().getId();
             if (!ownerUserId.equals(userId)) {
                 throw new ForbiddenException("You cannot issue offers on behalf of another company");
@@ -117,7 +117,7 @@ public class OfferService {
             if (newStatus != OfferStatus.ACCEPTED && newStatus != OfferStatus.DECLINED) {
                 throw new BadRequestException("Students may only ACCEPT or DECLINE an offer.");
             }
-        } else if (user.getRole() == Role.COMPANY) {
+        } else if (user.getRole() == Role.COMPANY || user.getRole() == Role.RECRUITER) {
             Long companyOwnerId = offer.getCompany().getUser().getId();
             if (!companyOwnerId.equals(userId)) {
                 throw new ForbiddenException("You can only manage offers for your own company.");
@@ -192,6 +192,18 @@ public class OfferService {
                 .stream()
                 .map(OfferDTO::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OfferDTO> getOffersByCompanyEntityId(Long companyId, Long userId, Role role) {
+        if (role == Role.COMPANY || role == Role.RECRUITER) {
+            Company company = companyRepository.findByUserId(userId)
+                    .orElseThrow(() -> new ForbiddenException("Company profile not found for user: " + userId));
+            if (!company.getId().equals(companyId)) {
+                throw new ForbiddenException("You cannot view offers issued by another company");
+            }
+        }
+        return getOffersByCompanyEntityId(companyId);
     }
 
     @Transactional(readOnly = true)

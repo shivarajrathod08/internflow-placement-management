@@ -47,8 +47,10 @@ public class InterviewService {
         User currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        // Company ownership check
-        if (!application.getInternship().getCompany().getUser().getId().equals(userId) && !currentUser.getRole().name().equals("ADMIN")) {
+        // Company ownership or Staff check
+        boolean isCompanyOwner = application.getInternship().getCompany().getUser().getId().equals(userId);
+        boolean isAdminOrTpo = currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.TPO;
+        if (!isCompanyOwner && !isAdminOrTpo) {
             throw new ForbiddenException("You do not have permission to schedule interviews for this candidate");
         }
 

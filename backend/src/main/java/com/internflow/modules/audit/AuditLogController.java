@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/admin/audit-logs")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'TPO')")
 @Tag(name = "Audit Logs", description = "Administrator audit trail operations")
 public class AuditLogController {
 

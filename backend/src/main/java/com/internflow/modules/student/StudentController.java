@@ -142,7 +142,7 @@ public class StudentController {
     public ResponseEntity<ApiResponse<StudentProfileDTO>> getStudentById(@PathVariable Long id) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         Role currentUserRole = SecurityUtils.getCurrentUserRole();
-        if (currentUserRole == Role.COMPANY) {
+        if (currentUserRole == Role.COMPANY || currentUserRole == Role.RECRUITER) {
             boolean hasApplied = studentService.hasStudentAppliedToCompany(id, currentUserId);
             if (!hasApplied) {
                 throw new com.internflow.exception.ForbiddenException("Access denied. Candidate has not applied to your organization.");
@@ -177,7 +177,7 @@ public class StudentController {
         Internship internship = internshipRepository.findById(internshipId)
                 .orElseThrow(() -> new com.internflow.exception.ResourceNotFoundException("Internship", "id", internshipId));
 
-        if (currentUserRole == Role.COMPANY) {
+        if (currentUserRole == Role.COMPANY || currentUserRole == Role.RECRUITER) {
             if (!internship.getCompany().getUser().getId().equals(currentUserId)) {
                 throw new com.internflow.exception.ForbiddenException("Access denied. You do not own this internship posting.");
             }

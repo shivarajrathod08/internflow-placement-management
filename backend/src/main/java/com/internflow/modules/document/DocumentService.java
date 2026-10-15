@@ -193,7 +193,7 @@ public class DocumentService {
             if (!document.getStudent().getUser().getId().equals(userId)) {
                 throw new ForbiddenException("You can only access your own documents");
             }
-        } else if (role == Role.COMPANY) {
+        } else if (role == Role.COMPANY || role == Role.RECRUITER) {
             if (document.getApplication() != null) {
                 Long companyOwnerId = document.getApplication().getInternship().getCompany().getUser().getId();
                 if (!companyOwnerId.equals(userId)) {

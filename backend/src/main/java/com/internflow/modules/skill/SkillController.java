@@ -34,15 +34,15 @@ public class SkillController {
     }
 
     @PostMapping("/admin")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Create a new canonical skill with optional aliases (Admin)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TPO')")
+    @Operation(summary = "Create a new canonical skill with optional aliases (Admin/TPO)")
     public ResponseEntity<ApiResponse<SkillDTO>> createSkill(@Valid @RequestBody CreateSkillRequest request) {
         SkillDTO created = skillService.createSkill(request);
         return new ResponseEntity<>(ApiResponse.ok("Skill created successfully", created), HttpStatus.CREATED);
     }
 
     @PostMapping("/admin/{id}/aliases")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TPO')")
     @Operation(summary = "Add an alias mapping to a canonical skill (Admin)")
     public ResponseEntity<ApiResponse<Void>> addAlias(@PathVariable Long id, @Valid @RequestBody AddAliasRequest request) {
         skillService.addAlias(id, request.getAlias());

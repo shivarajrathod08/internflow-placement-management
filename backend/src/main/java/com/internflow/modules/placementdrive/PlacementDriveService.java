@@ -1,6 +1,8 @@
 package com.internflow.modules.placementdrive;
 
+import com.internflow.exception.ForbiddenException;
 import com.internflow.exception.ResourceNotFoundException;
+import com.internflow.modules.user.Role;
 import com.internflow.modules.audit.AuditService;
 import com.internflow.modules.company.Company;
 import com.internflow.modules.company.CompanyRepository;
@@ -89,9 +91,18 @@ public class PlacementDriveService {
     }
 
     @Transactional(readOnly = true)
-    public List<StudentProfileDTO> getEligibleCandidates(Long driveId) {
+    public List<StudentProfileDTO> getEligibleCandidates(Long driveId, Long userId, Role role) {
         PlacementDrive drive = driveRepository.findById(driveId)
                 .orElseThrow(() -> new ResourceNotFoundException("PlacementDrive", "id", driveId));
+
+        if (role == Role.COMPANY || role == Role.RECRUITER) {
+            if (drive.getCompany() != null) {
+                Long ownerUserId = drive.getCompany().getUser().getId();
+                if (!ownerUserId.equals(userId)) {
+                    throw new ForbiddenException("Access denied to view candidate pool for another organization's campus drive");
+                }
+            }
+        }
 
         List<String> allowedBranches = drive.getEligibleBranches() != null && !drive.getEligibleBranches().isBlank()
                 ? Arrays.stream(drive.getEligibleBranches().split(",")).map(String::trim).map(String::toLowerCase).toList()
@@ -100,6 +111,10 @@ public class PlacementDriveService {
         List<Student> allStudents = studentRepository.findAll();
         return allStudents.stream()
                 .filter(s -> {
+                    // Must be institutional verified academic standing
+                    if (!Boolean.TRUE.equals(s.getIsVerified())) {
+                        return false;
+                    }
                     // Check CGPA
                     if (drive.getMinCgpa() != null && drive.getMinCgpa().compareTo(BigDecimal.ZERO) > 0) {
                         if (s.getCgpa() == null || s.getCgpa().compareTo(drive.getMinCgpa()) < 0) {
@@ -120,5 +135,10 @@ public class PlacementDriveService {
                 })
                 .map(StudentProfileDTO::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentProfileDTO> getEligibleCandidates(Long driveId) {
+        return getEligibleCandidates(driveId, null, null);
     }
 }

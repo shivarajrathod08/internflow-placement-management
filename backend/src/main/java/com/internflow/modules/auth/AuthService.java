@@ -56,12 +56,16 @@ public class AuthService {
                 profileId = s.getId();
                 name = s.getFirstName() + " " + s.getLastName();
             }
-        } else if (userDetails.getRole() == Role.COMPANY) {
+        } else if (userDetails.getRole() == Role.COMPANY || userDetails.getRole() == Role.RECRUITER) {
             Company c = companyRepository.findByUserId(userDetails.getId()).orElse(null);
             if (c != null) {
                 profileId = c.getId();
                 name = c.getCompanyName();
             }
+        } else if (userDetails.getRole() == Role.TPO) {
+            name = "Training & Placement Officer";
+        } else if (userDetails.getRole() == Role.FACULTY_COORDINATOR) {
+            name = "Faculty Coordinator";
         } else {
             name = "Campus Administrator";
         }
@@ -199,12 +203,16 @@ public class AuthService {
                 profileId = s.getId();
                 name = s.getFirstName() + " " + s.getLastName();
             }
-        } else if (user.getRole() == Role.COMPANY) {
+        } else if (user.getRole() == Role.COMPANY || user.getRole() == Role.RECRUITER) {
             Company c = companyRepository.findByUserId(userId).orElse(null);
             if (c != null) {
                 profileId = c.getId();
                 name = c.getCompanyName();
             }
+        } else if (user.getRole() == Role.TPO) {
+            name = "Training & Placement Officer";
+        } else if (user.getRole() == Role.FACULTY_COORDINATOR) {
+            name = "Faculty Coordinator";
         } else {
             name = "Campus Administrator";
         }

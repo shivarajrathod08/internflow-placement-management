@@ -160,3 +160,109 @@ This log details the complete set of source code, configuration, and architectur
   - Co-located `nginx.conf` inside `frontend/` and updated `frontend.Dockerfile` context.
   - Created `.github/workflows/ci.yml` executing automated PostgreSQL 16 service container tests, Maven packaging, Vitest runner, and Vite production bundle on pull requests and pushes to master.
 - **Verification:** Production bundle succeeds with `vite build`.
+
+---
+
+### Record ID: REP-DEF-01
+- **Vulnerability / Defect:** DEF-01: Recruiter Applicant Pipeline State Machine Block
+- **Files Modified:**
+  - `backend/src/main/java/com/internflow/modules/application/ApplicationStateMachine.java`
+  - `backend/src/test/java/com/internflow/modules/application/ApplicationStateMachineTest.java`
+- **Changes Applied:**
+  - In `ApplicationStateMachine.java`, permitted direct recruiter shortlisting (`SHORTLISTED`) and direct rejection (`REJECTED`) from initial `APPLIED` state.
+  - Permitted `INTERVIEW_SCHEDULED` from `UNDER_REVIEW`, and `SELECTED`/`OFFERED` from `SHORTLISTED`.
+  - Added unit test cases in `ApplicationStateMachineTest.java` verifying allowed transitions and preventing regression on illegal transitions.
+- **Verification:** `ApplicationStateMachineTest` passed with 5 test cases.
+
+---
+
+### Record ID: REP-DEF-02
+- **Vulnerability / Defect:** DEF-02: Interview Schedule Routing Path Mismatch
+- **Files Modified:**
+  - `backend/src/main/java/com/internflow/modules/interview/InterviewController.java`
+- **Changes Applied:**
+  - Configured `@PostMapping({"", "/schedule"})` on `InterviewController.scheduleInterview` to support both `/api/interviews` and `/api/interviews/schedule` invoked from `ApplicantsPipeline.tsx`.
+  - Added symmetric authorization for `COMPANY`, `RECRUITER`, `ADMIN`, `TPO` across scheduling, rescheduling, and feedback endpoints.
+- **Verification:** Endpoint matches frontend Axios requests; build and tests passing.
+
+---
+
+### Record ID: REP-DEF-03
+- **Vulnerability / Defect:** DEF-03: Company KYC Rejection DTO Discrepancy
+- **Files Modified:**
+  - `backend/src/main/java/com/internflow/modules/company/VerifyCompanyRequest.java`
+  - `frontend/src/pages/admin/CompanyApprovals.tsx`
+- **Changes Applied:**
+  - Added `notes` field in `VerifyCompanyRequest.java` and provided fallback getters so both `rejectionReason` and `notes` are supported.
+  - Updated `CompanyApprovals.tsx` to provide both `rejectionReason` and `notes` payloads.
+- **Verification:** Approvals and rejections persist rejection notes cleanly into audit trail and notifications.
+
+---
+
+### Record ID: REP-DEF-04
+- **Vulnerability / Defect:** DEF-04: Cross-Company Offer BOLA/IDOR Data Leak
+- **Files Modified:**
+  - `backend/src/main/java/com/internflow/modules/offer/OfferController.java`
+  - `backend/src/main/java/com/internflow/modules/offer/OfferService.java`
+  - `backend/src/test/java/com/internflow/modules/offer/OfferIntegrationTest.java`
+- **Changes Applied:**
+  - Added overloaded `getOffersByCompanyEntityId(Long companyId, Long userId, Role role)` in `OfferService.java`.
+  - Checked that if caller has role `COMPANY` or `RECRUITER`, caller's owned company ID must match `companyId`. Mismatch throws `ForbiddenException`.
+  - Added integration test in `OfferIntegrationTest.java` asserting HTTP 403 / Forbidden on unauthorized cross-company offer inspection.
+- **Verification:** `OfferIntegrationTest` passed with 4/4 passing tests.
+
+---
+
+### Record ID: REP-DEF-05
+- **Vulnerability / Defect:** DEF-05: Asymmetric Recruiter Role Recognition
+- **Files Modified:**
+  - `backend/src/main/java/com/internflow/modules/offer/OfferService.java`
+  - `backend/src/main/java/com/internflow/modules/document/DocumentService.java`
+  - `backend/src/main/java/com/internflow/modules/student/StudentController.java`
+  - `backend/src/main/java/com/internflow/security/SecurityUtils.java`
+  - `backend/src/main/java/com/internflow/modules/auth/AuthService.java`
+- **Changes Applied:**
+  - Added `Role.RECRUITER` checks in all locations checking `Role.COMPANY`.
+  - Ensured `SecurityUtils.isCompany()` returns true for recruiters.
+  - Fixed `AuthService` user DTO mapping to resolve recruiter profile IDs correctly.
+- **Verification:** Recruiter users can access company portal, download applicant resumes, and issue job offers.
+
+---
+
+### Record ID: REP-DEF-06
+- **Vulnerability / Defect:** DEF-06: Institutional TPO Role Blockage
+- **Files Modified:**
+  - `backend/src/main/java/com/internflow/modules/company/CompanyController.java`
+  - `backend/src/main/java/com/internflow/modules/document/DocumentController.java`
+  - `backend/src/main/java/com/internflow/modules/skill/SkillController.java`
+  - `backend/src/main/java/com/internflow/modules/audit/AuditLogController.java`
+  - `backend/src/main/java/com/internflow/modules/application/ApplicationService.java`
+  - `backend/src/main/java/com/internflow/modules/internship/InternshipService.java`
+- **Changes Applied:**
+  - Extended `@PreAuthorize` from `hasRole('ADMIN')` to `hasAnyRole('ADMIN', 'TPO')` across institutional management endpoints.
+- **Verification:** Training & Placement Officers can manage KYC approvals, document verifications, skills, and drive lifecycles.
+
+---
+
+### Record ID: REP-DEF-07
+- **Vulnerability / Defect:** DEF-07: Placement Drive Academic Verification Bypass & Candidate Pool Exposure
+- **Files Modified:**
+  - `backend/src/main/java/com/internflow/modules/placementdrive/PlacementDriveController.java`
+  - `backend/src/main/java/com/internflow/modules/placementdrive/PlacementDriveService.java`
+  - `backend/src/test/java/com/internflow/modules/placementdrive/PlacementDriveIntegrationTest.java`
+- **Changes Applied:**
+  - In `PlacementDriveService.getEligibleCandidates`, strictly verified `Boolean.TRUE.equals(student.getIsVerified())`.
+  - Added ownership check ensuring recruiters cannot query candidate pools of competitor campus drives.
+  - Added unit/integration test in `PlacementDriveIntegrationTest.java`.
+- **Verification:** `PlacementDriveIntegrationTest` passed with 3/3 passing tests.
+
+---
+
+### Record ID: REP-DEF-08
+- **Vulnerability / Defect:** DEF-08: Seed Demo Credential Production Posture
+- **Files Modified:**
+  - `backend/src/main/java/com/internflow/config/ProductionSecuritySanitizer.java`
+- **Changes Applied:**
+  - Created `ProductionSecuritySanitizer.java` activated under Spring profile `prod`.
+  - Queries and deactivates any seed accounts retaining default demo passwords (`Password@123`), neutralizing credential exploitation on live deployments without modifying historical Flyway migrations.
+- **Verification:** Context builds and initializes cleanly under all environments.

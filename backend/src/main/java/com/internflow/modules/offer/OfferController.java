@@ -67,7 +67,9 @@ public class OfferController {
     @PreAuthorize("hasAnyRole('COMPANY', 'RECRUITER', 'ADMIN', 'TPO')")
     @Operation(summary = "Get all offers extended by a company ID")
     public ResponseEntity<ApiResponse<List<OfferDTO>>> getOffersByCompanyId(@PathVariable Long companyId) {
-        List<OfferDTO> offers = offerService.getOffersByCompanyEntityId(companyId);
+        Long userId = SecurityUtils.getCurrentUserId();
+        com.internflow.modules.user.Role role = SecurityUtils.getCurrentUserRole();
+        List<OfferDTO> offers = offerService.getOffersByCompanyEntityId(companyId, userId, role);
         return ResponseEntity.ok(ApiResponse.ok(offers));
     }
 

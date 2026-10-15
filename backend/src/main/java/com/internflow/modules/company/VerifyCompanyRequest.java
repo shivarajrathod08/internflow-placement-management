@@ -9,4 +9,19 @@ public class VerifyCompanyRequest {
     private CompanyVerificationStatus status; // APPROVED, REJECTED, SUSPENDED
 
     private String rejectionReason;
+    private String notes;
+
+    public String getRejectionReason() {
+        if (rejectionReason != null && !rejectionReason.isBlank()) {
+            return rejectionReason;
+        }
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+        if (this.rejectionReason == null) {
+            this.rejectionReason = notes;
+        }
+    }
 }

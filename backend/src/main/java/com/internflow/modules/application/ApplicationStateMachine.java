@@ -14,12 +14,15 @@ public class ApplicationStateMachine {
         // Initial application
         VALID_TRANSITIONS.put(ApplicationStatus.APPLIED, Set.of(
                 ApplicationStatus.UNDER_REVIEW,
+                ApplicationStatus.SHORTLISTED,
+                ApplicationStatus.REJECTED,
                 ApplicationStatus.WITHDRAWN
         ));
 
         // Company review
         VALID_TRANSITIONS.put(ApplicationStatus.UNDER_REVIEW, Set.of(
                 ApplicationStatus.SHORTLISTED,
+                ApplicationStatus.INTERVIEW_SCHEDULED,
                 ApplicationStatus.REJECTED,
                 ApplicationStatus.WITHDRAWN
         ));
@@ -27,6 +30,8 @@ public class ApplicationStateMachine {
         // Shortlisted candidates
         VALID_TRANSITIONS.put(ApplicationStatus.SHORTLISTED, Set.of(
                 ApplicationStatus.INTERVIEW_SCHEDULED,
+                ApplicationStatus.SELECTED,
+                ApplicationStatus.OFFERED,
                 ApplicationStatus.REJECTED
         ));
 

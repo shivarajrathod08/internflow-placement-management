@@ -58,4 +58,14 @@ class ApplicationStateMachineTest {
         assertFalse(stateMachine.isValidTransition(ApplicationStatus.SHORTLISTED, ApplicationStatus.WITHDRAWN));
         assertFalse(stateMachine.isValidTransition(ApplicationStatus.SELECTED, ApplicationStatus.WITHDRAWN));
     }
+
+    @Test
+    @DisplayName("Should permit recruiter fast-track shortlisting and direct rejections")
+    void testRecruiterFastTrackTransitions() {
+        assertTrue(stateMachine.isValidTransition(ApplicationStatus.APPLIED, ApplicationStatus.SHORTLISTED));
+        assertTrue(stateMachine.isValidTransition(ApplicationStatus.APPLIED, ApplicationStatus.REJECTED));
+        assertTrue(stateMachine.isValidTransition(ApplicationStatus.UNDER_REVIEW, ApplicationStatus.INTERVIEW_SCHEDULED));
+        assertTrue(stateMachine.isValidTransition(ApplicationStatus.SHORTLISTED, ApplicationStatus.SELECTED));
+        assertTrue(stateMachine.isValidTransition(ApplicationStatus.SHORTLISTED, ApplicationStatus.OFFERED));
+    }
 }

@@ -63,11 +63,11 @@ This document provides the authoritative end-to-end mapping between the React Ty
 
 | Frontend Method | Backend Endpoint | HTTP | Controller Method | Roles / Permissions | Request Payload | Response Schema |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `interviewsApi.schedule` | `/api/interviews` | POST | `InterviewController.scheduleInterview` | `COMPANY_RECRUITER`, `TPO`, `ADMIN` | `ScheduleInterviewRequest` (`applicationId`, `scheduledAt`, `meetingLink`, `round`) | `ApiResponse<InterviewDTO>` |
+| `interviewsApi.schedule` | `/api/interviews` & `/api/interviews/schedule` | POST | `InterviewController.scheduleInterview` | `COMPANY`, `RECRUITER`, `TPO`, `ADMIN` | `ScheduleInterviewRequest` (`applicationId`, `scheduledAt`, `meetingLink`, `round`) | `ApiResponse<InterviewDTO>` |
 | `interviewsApi.getMyInterviews` | `/api/interviews/student/me` | GET | `InterviewController.getMyInterviews` | `hasRole('STUDENT')` | None | `ApiResponse<List<InterviewDTO>>` |
-| `interviewsApi.getCompanyInterviews`| `/api/interviews/company` | GET | `InterviewController.getCompanyInterviews` | `hasRole('COMPANY_RECRUITER')` | Query params: `page`, `size` | `ApiResponse<PageResponse<InterviewDTO>>` |
-| `interviewsApi.reschedule` | `/api/interviews/{id}/reschedule` | PATCH | `InterviewController.rescheduleInterview` | `COMPANY_RECRUITER`, `TPO`, `ADMIN` | `RescheduleInterviewRequest` (`newScheduledAt`, `meetingLink`) | `ApiResponse<InterviewDTO>` |
-| `interviewsApi.submitFeedback` | `/api/interviews/{id}/feedback` | POST | `InterviewController.submitFeedback` | `COMPANY_RECRUITER`, `TPO`, `ADMIN` | `InterviewFeedbackRequest` (`feedback`, `rating`, `outcome`, `status`) | `ApiResponse<InterviewDTO>` |
+| `interviewsApi.getCompanyInterviews`| `/api/interviews/company` | GET | `InterviewController.getCompanyInterviews` | `COMPANY`, `RECRUITER`, `TPO`, `ADMIN` | Query params: `page`, `size` | `ApiResponse<PageResponse<InterviewDTO>>` |
+| `interviewsApi.reschedule` | `/api/interviews/{id}/reschedule` | PATCH | `InterviewController.rescheduleInterview` | `COMPANY`, `RECRUITER`, `TPO`, `ADMIN` | `RescheduleInterviewRequest` (`newScheduledAt`, `meetingLink`) | `ApiResponse<InterviewDTO>` |
+| `interviewsApi.submitFeedback` | `/api/interviews/{id}/feedback` | POST | `InterviewController.submitFeedback` | `COMPANY`, `RECRUITER`, `TPO`, `ADMIN` | `InterviewFeedbackRequest` (`feedback`, `rating`, `outcome`, `status`) | `ApiResponse<InterviewDTO>` |
 
 ---
 
@@ -75,11 +75,11 @@ This document provides the authoritative end-to-end mapping between the React Ty
 
 | Frontend Method | Backend Endpoint | HTTP | Controller Method | Roles / Permissions | Request Payload | Response Schema |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `offersApi.createOffer` | `/api/offers` | POST | `OfferController.createOffer` | `hasRole('COMPANY_RECRUITER')` | `CreateOfferRequest` (`applicationId`, `stipend`, `ctc`, `joiningDate`, `validUntil`) | `ApiResponse<OfferDTO>` |
+| `offersApi.createOffer` | `/api/offers` | POST | `OfferController.createOffer` | `COMPANY`, `RECRUITER`, `TPO`, `ADMIN` (Scoped to owned application) | `CreateOfferRequest` (`applicationId`, `stipend`, `ctc`, `joiningDate`, `validUntil`, `designation`) | `ApiResponse<OfferDTO>` |
 | `offersApi.getMyOffers` | `/api/offers/student/me` | GET | `OfferController.getMyOffers` | `hasRole('STUDENT')` | None | `ApiResponse<List<OfferDTO>>` |
 | `offersApi.getAllOffers` | `/api/offers` & `/api/offers/all` | GET | `OfferController.getAllOffers` | `hasAnyRole('TPO', 'FACULTY_COORDINATOR', 'ADMIN')` | Query params: `page`, `size` | `ApiResponse<PageResponse<OfferDTO>>` |
-| `offersApi.getCompanyOffers` | `/api/offers/company/{companyId}` | GET | `OfferController.getOffersByCompany` | Recruiter of Company, `TPO`, `ADMIN` | Path param: `companyId` | `ApiResponse<List<OfferDTO>>` |
-| `offersApi.updateStatus` | `/api/offers/{id}/status` | PATCH | `OfferController.updateOfferStatus` | `isAuthenticated()` (Role checked) | `UpdateOfferStatusRequest` (`status`, `responseNotes`) | `ApiResponse<OfferDTO>` |
+| `offersApi.getCompanyOffers` | `/api/offers/company/{companyId}` | GET | `OfferController.getOffersByCompany` | Verified Owner Recruiter of `companyId`, `TPO`, `ADMIN` (BOLA/IDOR protected) | Path param: `companyId` | `ApiResponse<List<OfferDTO>>` |
+| `offersApi.updateStatus` | `/api/offers/{id}/status` | PATCH | `OfferController.updateOfferStatus` | `isAuthenticated()` (Role checked; Student can ACCEPT/REJECT; Company/Staff can manage) | `UpdateOfferStatusRequest` (`status`, `responseNotes`) | `ApiResponse<OfferDTO>` |
 
 ---
 
@@ -91,6 +91,7 @@ This document provides the authoritative end-to-end mapping between the React Ty
 | `placementDrivesApi.getById` | `/api/placement-drives/{id}` | GET | `PlacementDriveController.getPlacementDriveById` | `isAuthenticated()` | Path param: `id` | `ApiResponse<PlacementDriveDTO>` |
 | `placementDrivesApi.create` | `/api/placement-drives` | POST | `PlacementDriveController.createPlacementDrive` | `hasAnyRole('TPO', 'ADMIN')` | `CreatePlacementDriveRequest` (`name`/`driveName`, `startDate`, `endDate`, `batchYear`, `maxBacklogs`) | `ApiResponse<PlacementDriveDTO>` |
 | `placementDrivesApi.updateStatus` | `/api/placement-drives/{id}/status` | PATCH / PUT | `PlacementDriveController.updateStatus` | `hasAnyRole('TPO', 'ADMIN')` | Body or Param: `status` | `ApiResponse<PlacementDriveDTO>` |
+| `placementDrivesApi.getEligible` | `/api/placement-drives/{id}/eligible-candidates` | GET | `PlacementDriveController.getEligibleCandidates` | `TPO`, `ADMIN`, or Owner Company of Drive (Strict `isVerified=true` academic check) | Path param: `id` | `ApiResponse<List<StudentProfileDTO>>` |
 
 ---
 

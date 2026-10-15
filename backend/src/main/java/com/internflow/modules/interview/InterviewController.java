@@ -27,8 +27,8 @@ public class InterviewController {
 
     private final InterviewService interviewService;
 
-    @PostMapping("/schedule")
-    @PreAuthorize("hasAnyRole('COMPANY', 'ADMIN')")
+    @PostMapping({"", "/schedule"})
+    @PreAuthorize("hasAnyRole('COMPANY', 'RECRUITER', 'ADMIN', 'TPO')")
     @Operation(summary = "Schedule an interview round for a shortlisted candidate")
     public ResponseEntity<ApiResponse<InterviewDTO>> scheduleInterview(@Valid @RequestBody ScheduleInterviewRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -37,7 +37,7 @@ public class InterviewController {
     }
 
     @PatchMapping("/{id}/reschedule")
-    @PreAuthorize("hasAnyRole('COMPANY', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY', 'RECRUITER', 'ADMIN', 'TPO')")
     @Operation(summary = "Reschedule an existing interview")
     public ResponseEntity<ApiResponse<InterviewDTO>> rescheduleInterview(
             @PathVariable Long id,
@@ -48,7 +48,7 @@ public class InterviewController {
     }
 
     @PostMapping("/{id}/feedback")
-    @PreAuthorize("hasAnyRole('COMPANY', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('COMPANY', 'RECRUITER', 'ADMIN', 'TPO')")
     @Operation(summary = "Submit interview feedback, score, and completion outcome")
     public ResponseEntity<ApiResponse<InterviewDTO>> submitFeedback(
             @PathVariable Long id,
@@ -68,7 +68,7 @@ public class InterviewController {
     }
 
     @GetMapping("/company")
-    @PreAuthorize("hasRole('COMPANY')")
+    @PreAuthorize("hasAnyRole('COMPANY', 'RECRUITER')")
     @Operation(summary = "Get all interviews scheduled by the company")
     public ResponseEntity<ApiResponse<PageResponse<InterviewDTO>>> getCompanyInterviews(
             @PageableDefault(size = 10, sort = "scheduledAt") Pageable pageable) {

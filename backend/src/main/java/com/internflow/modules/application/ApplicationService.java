@@ -13,6 +13,7 @@ import com.internflow.modules.notification.NotificationService;
 import com.internflow.modules.notification.NotificationType;
 import com.internflow.modules.student.Student;
 import com.internflow.modules.student.StudentRepository;
+import com.internflow.modules.user.Role;
 import com.internflow.modules.user.User;
 import com.internflow.modules.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -135,8 +136,8 @@ public class ApplicationService {
         User currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        // Ownership authorization check: Company can update their applicants, Admin can update any
-        if (!currentUser.getRole().name().equals("ADMIN")) {
+        // Ownership authorization check: Company can update their applicants, Admin/TPO can update any
+        if (currentUser.getRole() != Role.ADMIN && currentUser.getRole() != Role.TPO) {
             Long companyOwnerUserId = application.getInternship().getCompany().getUser().getId();
             if (!companyOwnerUserId.equals(userId)) {
                 throw new ForbiddenException("You do not have permission to manage this application.");
@@ -253,7 +254,7 @@ public class ApplicationService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        if (!user.getRole().name().equals("ADMIN") && !internship.getCompany().getUser().getId().equals(userId)) {
+        if (user.getRole() != Role.ADMIN && user.getRole() != Role.TPO && !internship.getCompany().getUser().getId().equals(userId)) {
             throw new ForbiddenException("Access denied to view applicants for this internship");
         }
 

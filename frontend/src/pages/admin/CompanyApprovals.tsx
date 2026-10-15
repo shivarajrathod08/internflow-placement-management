@@ -85,6 +85,7 @@ export const CompanyApprovals: React.FC = () => {
 
       const res = await apiClient.post(`/company/admin/${selectedCompany.id}/verify`, {
         status: actionStatus,
+        rejectionReason: actionNotes,
         notes: actionNotes,
       });
 
