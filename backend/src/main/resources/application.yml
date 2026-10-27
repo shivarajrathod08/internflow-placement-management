@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
   servlet:
     context-path: /
 
@@ -21,6 +21,17 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
   upload:
     dir: ${UPLOAD_DIR:./uploads}
+  storage:
+    type: ${STORAGE_TYPE:local}
+    local:
+      dir: ${UPLOAD_DIR:./uploads}
+    s3:
+      endpoint: ${S3_ENDPOINT:}
+      region: ${S3_REGION:auto}
+      bucket: ${S3_BUCKET_NAME:}
+      access-key: ${S3_ACCESS_KEY_ID:}
+      secret-key: ${S3_SECRET_ACCESS_KEY:}
+      path-style-access: ${S3_PATH_STYLE_ACCESS:true}
   demo:
     seed-enabled: ${DEMO_SEED_ENABLED:false}
 

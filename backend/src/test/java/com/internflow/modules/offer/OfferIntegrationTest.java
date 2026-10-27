@@ -50,6 +50,25 @@ class OfferIntegrationTest {
 
         assertEquals(OfferStatus.ACCEPTED, accepted.getStatus());
         assertEquals("Delighted to accept the offer!", accepted.getResponseNotes());
+
+        // Attempting to re-accept an already accepted offer must fail
+        assertThrows(com.internflow.exception.BadRequestException.class, () ->
+                offerService.updateOfferStatus(offer.getId(), acceptRequest, 6L));
+
+        // Student confirms Day 1 Joining
+        UpdateOfferStatusRequest joinRequest = new UpdateOfferStatusRequest();
+        joinRequest.setStatus(OfferStatus.JOINED);
+        joinRequest.setResponseNotes("Reporting on Day 1 at Microsoft Bangalore office");
+
+        OfferDTO joined = offerService.updateOfferStatus(offer.getId(), joinRequest, 6L);
+
+        assertEquals(OfferStatus.JOINED, joined.getStatus());
+        assertEquals("Reporting on Day 1 at Microsoft Bangalore office", joined.getResponseNotes());
+
+        // Re-verifying application status in DB
+        Offer dbOffer = offerRepository.findById(offer.getId()).orElseThrow();
+        assertEquals(OfferStatus.JOINED, dbOffer.getStatus());
+        assertEquals(ApplicationStatus.JOINED, dbOffer.getApplication().getCurrentStatus());
     }
 
     @Test

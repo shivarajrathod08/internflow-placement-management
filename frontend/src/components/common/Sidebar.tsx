@@ -81,24 +81,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
 
       {/* Sidebar container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed top-0 lg:top-16 bottom-0 left-0 z-40 w-64 bg-[#F0EADF] border-r border-[#E5DED2] flex flex-col transition-transform duration-200 lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Mobile header inside drawer */}
-        <div className="h-16 px-6 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 lg:hidden">
-          <span className="font-bold text-slate-900 dark:text-white">Navigation</span>
-          <button onClick={onCloseMobile} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+        <div className="h-16 px-6 flex items-center justify-between border-b border-[#E5DED2] lg:hidden bg-[#F0EADF]">
+          <span className="font-bold text-[#192844] tracking-tight">Navigation</span>
+          <button
+            onClick={onCloseMobile}
+            className="p-1.5 rounded-lg text-[#64748B] hover:text-[#192844] hover:bg-[#E5DCCB]/60 transition-colors"
+            aria-label="Close menu"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Sidebar Nav Items */}
-        <div className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
-          <div className="px-3 mb-3">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+        <div className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
+          <div className="px-3.5 mb-3 flex items-center justify-between">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#786E5E]">
               {user.role} PORTAL
             </span>
+            <span className="h-px flex-1 ml-3 bg-[#E5DED2]" />
           </div>
 
           {links.map((link) => {
@@ -109,27 +114,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                 to={link.to}
                 onClick={onCloseMobile}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  `group flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all ${
                     isActive
-                      ? 'bg-brand-50 text-brand-700 font-bold dark:bg-brand-950/50 dark:text-brand-400 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/60'
+                      ? 'bg-[#FFFCF7] text-[#192844] font-bold shadow-sm border border-[#E5DED2] pl-3 border-l-4 border-l-[#192844]'
+                      : 'text-[#64748B] hover:text-[#192844] hover:bg-[#EAE3D6]/70 border border-transparent font-medium'
                   }`
                 }
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span>{link.label}</span>
+                {({ isActive }) => (
+                  <>
+                    <Icon
+                      className={`w-4 h-4 shrink-0 transition-colors ${
+                        isActive ? 'text-[#192844]' : 'text-[#64748B] group-hover:text-[#192844]'
+                      }`}
+                    />
+                    <span className="truncate">{link.label}</span>
+                  </>
+                )}
               </NavLink>
             );
           })}
         </div>
 
-        {/* Bottom banner for intelligent matching */}
-        <div className="p-3 m-3 rounded-2xl bg-gradient-to-br from-brand-600 to-indigo-700 text-white shadow-lg shadow-brand-500/10">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-4 h-4 text-brand-200" />
-            <span className="text-xs font-bold">Smart Match Engine</span>
+        {/* Bottom banner for intelligent matching - Restyled for Campus Ledger warm ivory theme */}
+        <div className="p-3.5 m-3 rounded-2xl bg-[#E5DCCB] border border-[#D8CEBC] text-[#192844] shadow-sm">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Sparkles className="w-4 h-4 text-[#192844] shrink-0" />
+            <span className="text-xs font-bold text-[#192844]">Smart Match Engine</span>
           </div>
-          <p className="text-[11px] text-brand-100 leading-snug">
+          <p className="text-[11px] text-[#475569] leading-relaxed">
             Deterministic 5-factor scoring connects students to fitting opportunities.
           </p>
         </div>

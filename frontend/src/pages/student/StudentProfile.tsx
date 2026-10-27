@@ -11,15 +11,29 @@ import {
   Trash2,
   CheckCircle2,
   ExternalLink,
+  Eye,
+  Download,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import api from '../../api/client';
 import { StudentProfile, StudentSkill, ProjectDTO, ExperienceDTO, CertificationDTO, ApiResponse } from '../../types';
+import { fetchDocumentBlob, downloadDocument, getDocumentErrorMessage } from '../../utils/documentViewer';
+import DocumentPreviewModal from '../../components/common/DocumentPreviewModal';
 
 export const StudentProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'personal' | 'skills' | 'projects' | 'experience' | 'certs' | 'resume'>('personal');
   const [loading, setLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Resume Document states
+  const [isViewingResume, setIsViewingResume] = useState(false);
+  const [isDownloadingResume, setIsDownloadingResume] = useState(false);
+  const [resumeActionError, setResumeActionError] = useState<string | null>(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewFilename, setPreviewFilename] = useState<string>('Resume.pdf');
 
   // Form states
   const [personalForm, setPersonalForm] = useState({
@@ -205,11 +219,53 @@ export const StudentProfilePage: React.FC = () => {
       await api.post('/documents/upload', data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      setResumeActionError(null);
       setSuccessMsg('Resume uploaded successfully!');
       fetchProfile();
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to upload resume.');
+    }
+  };
+
+  const handlePreviewResume = async () => {
+    if (!profile?.resumeUrl) return;
+    setIsViewingResume(true);
+    setResumeActionError(null);
+    try {
+      const defaultName = `${profile.firstName || 'Student'}_${profile.lastName || 'Resume'}_Resume.pdf`;
+      const result = await fetchDocumentBlob(profile.resumeUrl, 'inline', defaultName);
+      setPreviewBlobUrl(result.objectUrl);
+      setPreviewFilename(result.filename || defaultName);
+      setPreviewModalOpen(true);
+    } catch (err: any) {
+      const msg = getDocumentErrorMessage(err);
+      setResumeActionError(msg);
+    } finally {
+      setIsViewingResume(false);
+    }
+  };
+
+  const handleDownloadResume = async () => {
+    if (!profile?.resumeUrl) return;
+    setIsDownloadingResume(true);
+    setResumeActionError(null);
+    try {
+      const defaultName = `${profile.firstName || 'Student'}_${profile.lastName || 'Resume'}_Resume.pdf`;
+      await downloadDocument(profile.resumeUrl, defaultName);
+    } catch (err: any) {
+      const msg = getDocumentErrorMessage(err);
+      setResumeActionError(msg);
+    } finally {
+      setIsDownloadingResume(false);
+    }
+  };
+
+  const handleClosePreviewModal = () => {
+    setPreviewModalOpen(false);
+    if (previewBlobUrl) {
+      window.URL.revokeObjectURL(previewBlobUrl);
+      setPreviewBlobUrl(null);
     }
   };
 
@@ -724,57 +780,134 @@ export const StudentProfilePage: React.FC = () => {
 
       {/* Tab 6: Resume */}
       {activeTab === 'resume' && (
-        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
+        <div className="p-6 rounded-2xl bg-[#FFFCF7] dark:bg-slate-900 border border-[#E5DED2] dark:border-slate-800 shadow-sm space-y-6">
           <div>
-            <h3 className="text-sm font-extrabold text-slate-900">Official Resume Document</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Upload your latest PDF resume. Recruiters access this directly when shortlisting candidates.
+            <h3 className="text-base font-serif font-bold text-[#192844] dark:text-white">Official Resume Document</h3>
+            <p className="text-xs text-[#64748B] dark:text-slate-400 mt-0.5">
+              Upload your latest PDF resume. Recruiters access this directly when shortlisting candidates for internships.
             </p>
           </div>
 
-          {profile?.resumeUrl && (
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FileUp className="w-5 h-5 text-brand-600" />
+          {resumeActionError && (
+            <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-3 animate-in fade-in">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 space-y-1">
+                <p className="font-bold text-[#192844] dark:text-amber-300">Resume Access Notice</p>
+                <p className="text-amber-800 dark:text-amber-200/90">{resumeActionError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResumeActionError(null)}
+                className="text-amber-700 hover:text-amber-900 dark:text-amber-400 font-bold ml-2 underline text-xs"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {profile?.resumeUrl ? (
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-[#E5DED2] dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900 flex items-center justify-center flex-shrink-0 text-indigo-600 dark:text-indigo-400">
+                  <FileUp className="w-5 h-5" />
+                </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-800">Current Resume Attached</p>
-                  <p className="text-[10px] text-slate-500">Verified by platform</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-bold text-[#192844] dark:text-white">Current Resume Attached</p>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Verified
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#64748B] dark:text-slate-400 mt-0.5">
+                    Protected document ready for recruiter screening and placement applications
+                  </p>
                 </div>
               </div>
-              <a
-                href={profile.resumeUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
-              >
-                View / Download
-              </a>
+
+              <div className="flex items-center gap-2.5 self-end sm:self-center">
+                <button
+                  type="button"
+                  onClick={handlePreviewResume}
+                  disabled={isViewingResume || isDownloadingResume}
+                  aria-label="View Resume Preview"
+                  className="px-3.5 py-2 text-xs font-bold rounded-xl bg-[#192844] text-white hover:bg-[#2A3E63] transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isViewingResume ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View / Preview</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadResume}
+                  disabled={isViewingResume || isDownloadingResume}
+                  aria-label="Download Resume"
+                  className="px-3.5 py-2 text-xs font-bold rounded-xl bg-[#FFFCF7] dark:bg-slate-900 border border-[#E5DED2] dark:border-slate-700 text-[#192844] dark:text-slate-200 hover:bg-[#F0EADF] transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isDownloadingResume ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Downloading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-[#F0EADF]/30 dark:bg-slate-800/40 border border-dashed border-[#E5DED2] dark:border-slate-700 text-center">
+              <p className="text-xs text-[#64748B] dark:text-slate-400">
+                No resume document uploaded yet. Choose a PDF file below to attach your official resume.
+              </p>
             </div>
           )}
 
           <form onSubmit={handleUploadResume} className="space-y-4">
-            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center hover:border-brand-300 transition-colors">
-              <FileUp className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-              <p className="text-xs font-bold text-slate-700">Choose PDF resume file (Max 10MB)</p>
+            <div className="border-2 border-dashed border-[#E5DED2] dark:border-slate-700 rounded-2xl p-8 text-center hover:border-indigo-300 dark:hover:border-indigo-700 bg-white dark:bg-slate-900 transition-colors">
+              <FileUp className="w-8 h-8 text-[#64748B] mx-auto mb-2" />
+              <p className="text-xs font-bold text-[#192844] dark:text-white">Choose PDF resume file (Max 10MB)</p>
               <input
                 type="file"
                 accept=".pdf"
                 required
                 onChange={(e) => setResumeFile(e.target.files ? e.target.files[0] : null)}
-                className="mt-3 text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100"
+                className="mt-3 text-xs text-[#64748B] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-950 dark:file:text-indigo-300"
               />
             </div>
 
             <button
               type="submit"
               disabled={!resumeFile}
-              className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md shadow-brand-500/20 transition-all disabled:opacity-50"
+              className="px-5 py-2.5 rounded-xl bg-[#192844] hover:bg-[#2A3E63] text-white text-xs font-bold shadow-md shadow-slate-900/10 transition-all disabled:opacity-50"
             >
               Upload New Resume
             </button>
           </form>
         </div>
       )}
+
+      {/* Document Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={previewModalOpen}
+        onClose={handleClosePreviewModal}
+        title={`Official Resume — ${profile?.firstName || ''} ${profile?.lastName || ''}`}
+        blobUrl={previewBlobUrl}
+        filename={previewFilename}
+        onDownload={handleDownloadResume}
+      />
     </div>
   );
 };

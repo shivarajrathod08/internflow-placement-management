@@ -1,24 +1,37 @@
-# Build Stage
-FROM maven:3.9-eclipse-temurin-21 AS build
-WORKDIR /app
+# ==========================================
+# InternFlow Backend - Multi-stage Production Dockerfile
+# ==========================================
 
+# 1. Build Stage
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+WORKDIR /workspace
+
+# Cache Maven dependencies
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
-COPY src src
-RUN mvn clean package -DskipTests
+# Copy source and build package
+COPY src ./src
+RUN mvn clean package -DskipTests -B
 
-# Runtime Stage
-FROM eclipse-temurin:21-jre-jammy
+# 2. Runtime Stage (Lightweight JRE)
+FROM eclipse-temurin:21-jre-jammy AS runtime
 WORKDIR /app
 
-RUN groupadd -r internflow && useradd -r -g internflow internflow && \
-    mkdir -p /app/storage/resumes /app/storage/documents && \
+# Create non-root system user for security
+RUN groupadd -r internflow && useradd -r -g internflow -u 1001 internflow && \
+    mkdir -p /app/storage /app/storage/resume /app/storage/resumes /app/storage/offers && \
     chown -R internflow:internflow /app
 
-COPY --from=build --chown=internflow:internflow /app/target/*.jar app.jar
+# Copy executable jar from build stage
+COPY --from=build --chown=internflow:internflow /workspace/target/*.jar app.jar
 
-USER internflow
+USER internflow:internflow
+
+ENV SPRING_PROFILES_ACTIVE=prod \
+    JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom" \
+    PORT=8080
+
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

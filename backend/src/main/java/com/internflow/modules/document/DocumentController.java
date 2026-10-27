@@ -45,16 +45,26 @@ public class DocumentController {
     @GetMapping("/{id}/download")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Securely download or view an uploaded document")
-    public ResponseEntity<Resource> downloadDocument(@PathVariable Long id) {
+    public ResponseEntity<Resource> downloadDocument(
+            @PathVariable Long id,
+            @RequestParam(value = "disposition", required = false, defaultValue = "inline") String disposition) {
         Long userId = SecurityUtils.getCurrentUserId();
         Role role = SecurityUtils.getCurrentUserRole();
 
         Resource resource = documentService.loadFileAsResource(id, userId, role);
         Document document = documentService.getDocumentEntity(id);
 
+        String contentType = document.getMimeType();
+        if (contentType == null || contentType.isBlank()) {
+            contentType = MediaType.APPLICATION_PDF_VALUE;
+        }
+
+        String disp = "attachment".equalsIgnoreCase(disposition) ? "attachment" : "inline";
+        String cleanFileName = document.getFileName() != null ? document.getFileName().replace("\"", "") : "document.pdf";
+
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(document.getMimeType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + document.getFileName() + "\"")
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, disp + "; filename=\"" + cleanFileName + "\"")
                 .body(resource);
     }
 

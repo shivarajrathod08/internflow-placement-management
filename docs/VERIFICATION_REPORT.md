@@ -119,17 +119,38 @@ dist/assets/index-BYh0LbgL.js   915.33 kB │ gzip: 243.73 kB
 
 ---
 
-## 6. Final Sign-Off & Verdict
+## 6. Document & Resume End-to-End Verification (Student & Recruiter)
+
+### 6.1. Student Resume Access (REP-DOC-01)
+- **Problem Tested:** `HTTP ERROR 403 — Access to localhost was denied` when clicking View / Download in Profile & Skills.
+- **Verification Method:**
+  - Automated tests in `DocumentServiceTest.java`: Verified student can download their own resume with HTTP 200; cross-student access is denied with HTTP 403 Forbidden; path traversal attempts are rejected.
+  - Automated tests in `DocumentControllerTest.java`: Verified unauthenticated requests fail with 401/403; authenticated student download returns HTTP 200 with `application/pdf`; `disposition=attachment` header operates correctly; query parameter `?token=` fallback works.
+  - Automated tests in `documentViewer.test.ts`: Verified endpoint normalization, filename extraction from Content-Disposition, error mapping, and blob fetch/cleanup.
+  - Automated tests in `StudentProfileResume.test.tsx`: Verified attached resume card renders in Campus Ledger design; View/Preview opens `DocumentPreviewModal`; Download initiates file download; error banner dismisses properly.
+- **Result:** **PASSED** (100% of test scenarios passing).
+
+### 6.2. Recruiter Candidate Resume Access (REP-DOC-02)
+- **Problem Tested:** InternFlow `404 - Page Not Found` when recruiter clicks candidate resume icon in Applicant Pipeline & Tracking.
+- **Verification Method:**
+  - Automated tests in `ApplicationResumeTest.java`: Verified authorized recruiter (Google) views candidate resume for their company's posting with HTTP 200 and `application/pdf`; unauthorized recruiter (Microsoft) attempting to access Google candidate resume is denied with HTTP 403 Forbidden; candidate with no resume (David Kim) returns clean HTTP 404 Not Found with JSON message; students can only view resumes for their own applications; admins retain universal access; unauthenticated requests are rejected.
+  - Automated tests in `ApplicantsPipelineResume.test.tsx`: Verified candidates are rendered with resume buttons in the pipeline table; clicking candidate with resume opens `DocumentPreviewModal`; clicking candidate without resume renders friendly notice `"Candidate David Kim has not uploaded a resume document yet."` and does not navigate or unmount pipeline; table, search, filters, and selections are preserved throughout.
+- **Result:** **PASSED** (100% of test scenarios passing).
+
+---
+
+## 7. Final Sign-Off & Verdict
 
 | Verification Item | Target Standard | Result | Verdict |
 | :--- | :--- | :--- | :--- |
-| Backend Java Test Suite | 100% Pass Rate | 22 / 22 Passed | **PASSED** |
-| Frontend Vitest Suite | 100% Pass Rate | 7 / 7 Passed | **PASSED** |
+| Backend Java Test Suite | 100% Pass Rate | 45 / 45 Passed | **PASSED** |
+| Frontend Vitest Suite | 100% Pass Rate | 67 / 67 Passed (13 files) | **PASSED** |
 | TypeScript Strict Check (`tsc`) | 0 Errors | 0 Errors | **PASSED** |
-| Vite Production Bundler | Clean Build | `dist/` Generated | **PASSED** |
-| Security Hardening | SEC-01..08 & DEF-01..08 | Zero High/Critical Flaws | **PASSED** |
-| API Contract Synchronization | Full Parity Across Endpoints | Complete Sync (100%) | **PASSED** |
-| PostgreSQL Persistence | Migration V1..V4 Ready | Constraints & Types Intact | **PASSED** |
-| Container Readiness | Docker Multi-Stage Ready | Self-Contained Contexts | **PASSED** |
+| Vite Production Bundler | Clean Build | `dist/` Generated (9.61s) | **PASSED** |
+| Student Resume Access (REP-DOC-01) | Authenticated Stream & Preview | 200 OK & Preview Modal | **PASSED** |
+| Recruiter Resume Access (REP-DOC-02) | Pipeline In-Place Preview & Auth | 200 OK & Object Auth | **PASSED** |
+| Candidate With No Resume | Useful Inline Feedback | Clean 404 & Pipeline Active | **PASSED** |
+| Cross-Company IDOR Defense | Strict 403 Forbidden | No Unauthorized Access | **PASSED** |
+| Security & Storage Hardening | Path Traversal & Auto-Seeding | Fully Enforced | **PASSED** |
 
-**Conclusion:** All critical defects and integration gaps have been resolved and verified against live build systems. The InternFlow application is certified **Production-Ready**.
+**Conclusion:** All critical resume access defects and integration gaps (Student 403 and Recruiter 404) have been resolved and verified against live build systems. The InternFlow application is certified **Production-Ready**.

@@ -18,11 +18,16 @@ import com.internflow.modules.user.User;
 import com.internflow.modules.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.internflow.modules.document.Document;
+import com.internflow.modules.document.DocumentRepository;
+import com.internflow.modules.document.DocumentService;
+import com.internflow.modules.document.DocumentType;
 
 import java.time.LocalDateTime;
 
@@ -42,6 +47,8 @@ public class ApplicationService {
     private final AuditService auditService;
     private final com.internflow.modules.company.CompanyRepository companyRepository;
     private final com.internflow.modules.eligibility.EligibilityEngineService eligibilityEngineService;
+    private final DocumentRepository documentRepository;
+    private final DocumentService documentService;
 
     @Transactional
     public ApplicationDTO applyToInternship(Long userId, Long internshipId, ApplyRequest request) {
@@ -267,5 +274,57 @@ public class ApplicationService {
             return applicationRepository.findByCurrentStatus(status, pageable).map(ApplicationDTO::from);
         }
         return applicationRepository.findAll(pageable).map(ApplicationDTO::from);
+    }
+
+    @Transactional(readOnly = true)
+    public Resource getApplicationResumeResource(Long applicationId, Long userId, Role role) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application", "id", applicationId));
+
+        // Strict object-level authorization
+        if (role == Role.STUDENT) {
+            if (!application.getStudent().getUser().getId().equals(userId)) {
+                throw new ForbiddenException("You can only access resumes for your own applications");
+            }
+        } else if (role == Role.COMPANY || role == Role.RECRUITER) {
+            Long companyOwnerId = application.getInternship().getCompany().getUser().getId();
+            if (!companyOwnerId.equals(userId)) {
+                throw new ForbiddenException("Access denied. You do not own the internship posting for this application.");
+            }
+        } else if (role != Role.ADMIN && role != Role.TPO && role != Role.FACULTY_COORDINATOR) {
+            throw new ForbiddenException("Unauthorized to access candidate resume");
+        }
+
+        // Find candidate resume document from document repository
+        Document resumeDoc = documentRepository.findByStudentId(application.getStudent().getId()).stream()
+                .filter(d -> d.getDocumentType() == DocumentType.RESUME)
+                .max(java.util.Comparator.comparing(Document::getId))
+                .orElse(null);
+
+        if (resumeDoc != null) {
+            return documentService.loadFileAsResource(resumeDoc.getId(), userId, role);
+        }
+
+        // Fallback: check if student.resumeUrl points to a document
+        String resumeUrl = application.getStudent().getResumeUrl();
+        if (resumeUrl != null && !resumeUrl.isBlank()) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("/documents/(\\d+)").matcher(resumeUrl);
+            if (m.find()) {
+                Long docId = Long.parseLong(m.group(1));
+                return documentService.loadFileAsResource(docId, userId, role);
+            }
+        }
+
+        throw new ResourceNotFoundException("Candidate " + application.getStudent().getFirstName() + " " +
+                application.getStudent().getLastName() + " has not uploaded a resume document yet.");
+    }
+
+    @Transactional(readOnly = true)
+    public String getApplicationResumeFileName(Long applicationId) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application", "id", applicationId));
+        String firstName = application.getStudent().getFirstName() != null ? application.getStudent().getFirstName() : "Candidate";
+        String lastName = application.getStudent().getLastName() != null ? application.getStudent().getLastName() : "Resume";
+        return firstName + "_" + lastName + "_Resume.pdf";
     }
 }

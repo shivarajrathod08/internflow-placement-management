@@ -46,4 +46,12 @@ public class AuthController {
         AuthResponse response = authService.getCurrentUser(userId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
+
+    @PutMapping("/change-password")
+    @Operation(summary = "Change password for the currently authenticated user")
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        authService.changePassword(userId, request);
+        return ResponseEntity.ok(ApiResponse.ok("Password changed successfully", null));
+    }
 }

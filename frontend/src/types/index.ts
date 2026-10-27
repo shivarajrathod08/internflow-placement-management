@@ -41,6 +41,9 @@ export interface User {
   role: Role;
   name?: string;
   profileId?: number;
+  active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuthResponse {
@@ -51,6 +54,9 @@ export interface AuthResponse {
   role: Role;
   profileId?: number;
   name?: string;
+  active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ApiResponse<T> {
@@ -381,7 +387,7 @@ export interface CreatePlacementDriveRequest {
   maxBacklogs?: number;
 }
 
-export type OfferStatus = 'OFFERED' | 'ACCEPTED' | 'REJECTED' | 'JOINED' | 'REVOKED';
+export type OfferStatus = 'OFFERED' | 'ACCEPTED' | 'REJECTED' | 'DECLINED' | 'JOINED' | 'REVOKED';
 
 export interface Offer {
   id: number;

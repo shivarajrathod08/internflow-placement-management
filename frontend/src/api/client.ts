@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const resolvedBaseUrl = rawBaseUrl
+  ? (rawBaseUrl.endsWith('/api') ? rawBaseUrl : `${rawBaseUrl.replace(/\/+$/, '')}/api`)
+  : '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: resolvedBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -9,8 +14,12 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    if (config.url && config.url.startsWith('/api/')) {
-      config.url = config.url.substring(4);
+    if (config.url) {
+      if (config.url === '/api') {
+        config.url = '/';
+      } else if (config.url.startsWith('/api/')) {
+        config.url = config.url.substring(4);
+      }
     }
     const token = localStorage.getItem('internflow_token');
     if (token) {

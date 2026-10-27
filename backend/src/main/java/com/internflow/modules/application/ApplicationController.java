@@ -7,10 +7,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.internflow.modules.user.Role;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -93,5 +97,24 @@ public class ApplicationController {
             @PageableDefault(size = 15, sort = "appliedAt") Pageable pageable) {
         Page<ApplicationDTO> page = applicationService.getAllApplicationsAdmin(status, pageable);
         return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(page)));
+    }
+
+    @GetMapping("/{id}/resume")
+    @PreAuthorize("hasAnyRole('COMPANY', 'RECRUITER', 'ADMIN', 'TPO', 'STUDENT')")
+    @Operation(summary = "Securely download or view candidate resume for an application")
+    public ResponseEntity<Resource> getApplicationResume(
+            @PathVariable Long id,
+            @RequestParam(value = "disposition", required = false, defaultValue = "inline") String disposition) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        Role role = SecurityUtils.getCurrentUserRole();
+
+        Resource resource = applicationService.getApplicationResumeResource(id, userId, role);
+        String fileName = applicationService.getApplicationResumeFileName(id);
+
+        String disp = "attachment".equalsIgnoreCase(disposition) ? "attachment" : "inline";
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, disp + "; filename=\"" + fileName + "\"")
+                .body(resource);
     }
 }

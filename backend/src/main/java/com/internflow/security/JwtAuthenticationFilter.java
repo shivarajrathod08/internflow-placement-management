@@ -54,6 +54,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
+
+        // Support token as query parameter for document and resume downloads/previews
+        String requestUri = request.getRequestURI();
+        if (requestUri != null && (requestUri.contains("/api/documents/") || requestUri.endsWith("/resume"))) {
+            String tokenParam = request.getParameter("token");
+            if (StringUtils.hasText(tokenParam)) {
+                return tokenParam;
+            }
+        }
+
         return null;
     }
 }

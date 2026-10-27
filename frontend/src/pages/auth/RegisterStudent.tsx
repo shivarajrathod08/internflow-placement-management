@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, ArrowRight, User, Mail, Lock, Phone, BookOpen, Award } from 'lucide-react';
+import {
+  ArrowRight,
+  ShieldCheck,
+  BarChart3,
+  Calendar,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  X,
+} from 'lucide-react';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { ApiResponse, AuthResponse } from '../../types';
+import { RegistrationLayout } from '../../components/auth/RegistrationLayout';
 
 export const RegisterStudent: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -13,19 +23,47 @@ export const RegisterStudent: React.FC = () => {
     password: '',
     phone: '',
     college: '',
-    degree: 'B.S.',
+    degree: 'B.Tech / B.E.',
     branch: '',
     graduationYear: 2026,
-    cgpa: 8.5,
+    cgpa: 8.0,
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const handleCgpaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    setFormData((prev) => ({
+      ...prev,
+      cgpa: isNaN(val) ? ('' as any) : val,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Client-side validations
+    if (formData.cgpa === ('' as any) || Number(formData.cgpa) < 0 || Number(formData.cgpa) > 10) {
+      setError('CGPA must be a valid score between 0.00 and 10.00.');
+      return;
+    }
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters in length.');
+      return;
+    }
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      setError('Please provide both your first and last name.');
+      return;
+    }
+    if (!formData.college.trim() || !formData.branch.trim()) {
+      setError('Please enter your college name and branch of study.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -33,172 +71,323 @@ export const RegisterStudent: React.FC = () => {
       await login(formData.email, formData.password);
       navigate('/student/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to register student account. Please try again.');
+      const serverMsg = err.response?.data?.message;
+      if (err.response?.status === 409) {
+        setError(serverMsg || 'An account with this email address already exists. Please sign in instead.');
+      } else if (err.response?.status === 400) {
+        setError(serverMsg || 'Please review your profile details and ensure all required fields are correct.');
+      } else if (err.code === 'ERR_NETWORK') {
+        setError('Unable to reach the server. Please verify your connection and try again.');
+      } else {
+        setError(serverMsg || 'Failed to create student account. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const studentBenefits = [
+    {
+      icon: ShieldCheck,
+      title: 'Verified Opportunities',
+    },
+    {
+      icon: BarChart3,
+      title: 'Transparent Eligibility',
+    },
+    {
+      icon: Calendar,
+      title: 'Application Tracking',
+    },
+  ];
+
   return (
-    <div className="min-h-screen py-12 px-4 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-      <div className="w-full max-w-xl">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 mb-3">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+    <RegistrationLayout
+      eyebrow="STUDENT REGISTRATION"
+      title={
+        <>
+          Create your
+          <br />
+          student profile.
+        </>
+      }
+      description="Build your profile to discover eligible internships and track your applications."
+      benefits={studentBenefits}
+      imageSrc="/images/campus-students-ledger.jpg"
+      fallbackImageSrc="/images/campus-students.jpg"
+      imageAlt="Students collaborating on university campus"
+    >
+      <div className="bg-[#FFFFFF] sm:bg-[#FFFCF7] rounded-3xl border border-[#E5DED2] p-7 sm:p-9 lg:p-10 shadow-sm space-y-6">
+        <div>
+          <h2 className="font-serif text-3xl sm:text-4xl font-normal text-[#192844] tracking-tight">
             Create Student Profile
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Access verified internship opportunities and smart skill-gap matching
+          </h2>
+          <p className="text-sm text-[#475569] mt-1.5">
+            Fill in your details to get started with InternFlow
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 shadow-xl">
-          {error && (
-            <div className="mb-6 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
-              {error}
+        {/* Error Alert */}
+        {error && (
+          <div className="p-3.5 bg-[#FEF2F2] border border-[#FECACA] text-[#B91C1C] rounded-xl text-xs flex items-start justify-between gap-2 animate-in fade-in duration-150">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span className="font-medium leading-relaxed">{error}</span>
             </div>
-          )}
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="text-[#B91C1C] hover:text-[#991B1B] p-0.5 rounded"
+              aria-label="Dismiss error"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">First Name</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  placeholder="Alex"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Last Name</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  placeholder="Rivera"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-              </div>
+        {/* Form */}
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+          {/* Row 1: First Name & Last Name */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="firstName" className="block text-xs font-bold text-[#192844] mb-1.5">
+                First Name <span className="text-[#B91C1C]">*</span>
+              </label>
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                required
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                placeholder="Your first name"
+                className="w-full px-3.5 h-11 sm:h-12 text-sm rounded-xl border border-[#E5DED2] bg-[#FFFEFB] text-[#111827] font-medium placeholder:text-[#8A8F98] focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition-all"
+              />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">University Email</label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="student@college.edu"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-              </div>
+            <div>
+              <label htmlFor="lastName" className="block text-xs font-bold text-[#192844] mb-1.5">
+                Last Name <span className="text-[#B91C1C]">*</span>
+              </label>
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                required
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                placeholder="Your last name"
+                className="w-full px-3.5 h-11 sm:h-12 text-sm rounded-xl border border-[#E5DED2] bg-[#FFFEFB] text-[#111827] font-medium placeholder:text-[#8A8F98] focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition-all"
+              />
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Password</label>
+          {/* Row 2: University Email & Password */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="email" className="block text-xs font-bold text-[#192844] mb-1.5">
+                University Email <span className="text-[#B91C1C]">*</span>
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="name@university.edu"
+                className="w-full px-3.5 h-11 sm:h-12 text-sm rounded-xl border border-[#E5DED2] bg-[#FFFEFB] text-[#111827] font-medium placeholder:text-[#8A8F98] focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-xs font-bold text-[#192844] mb-1.5">
+                Password <span className="text-[#B91C1C]">*</span>
+              </label>
+              <div className="relative">
                 <input
-                  type="password"
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   minLength={6}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="At least 6 characters"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  placeholder="Create a password"
+                  className="w-full pl-3.5 pr-11 h-11 sm:h-12 text-sm rounded-xl border border-[#E5DED2] bg-[#FFFEFB] text-[#111827] font-medium placeholder:text-[#8A8F98] focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition-all"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-[#786E5E] hover:text-[#192844] transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Phone Number</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+1 (555) 000-0000"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Graduation Year</label>
-                <input
-                  type="number"
-                  min={2024}
-                  max={2030}
-                  value={formData.graduationYear}
-                  onChange={(e) => setFormData({ ...formData, graduationYear: parseInt(e.target.value) || 2026 })}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">CGPA (out of 10)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="10"
-                  value={formData.cgpa}
-                  onChange={(e) => setFormData({ ...formData, cgpa: parseFloat(e.target.value) || 8.0 })}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">College / University</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.college}
-                  onChange={(e) => setFormData({ ...formData, college: e.target.value })}
-                  placeholder="Stanford University"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Branch / Major</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.branch}
-                  onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                  placeholder="Computer Science"
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-4 py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md shadow-brand-500/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? <span>Creating Student Account...</span> : <span>Create Account & Continue</span>}
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
-
-          <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
-            <p className="text-xs text-slate-500">
-              Already have an account?{' '}
-              <Link to="/login" className="font-bold text-brand-600 hover:underline">
-                Sign In
-              </Link>
-            </p>
           </div>
+
+          {/* Row 3: Phone Number & Graduation Year */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="phone" className="block text-xs font-bold text-[#192844] mb-1.5">
+                Phone Number <span className="text-[#B91C1C]">*</span>
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+91 98765 43210"
+                className="w-full px-3.5 h-11 sm:h-12 text-sm rounded-xl border border-[#E5DED2] bg-[#FFFEFB] text-[#111827] font-medium placeholder:text-[#8A8F98] focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="graduationYear" className="block text-xs font-bold text-[#192844] mb-1.5">
+                Graduation Year <span className="text-[#B91C1C]">*</span>
+              </label>
+              <select
+                id="graduationYear"
+                name="graduationYear"
+                value={formData.graduationYear}
+                onChange={(e) => setFormData({ ...formData, graduationYear: parseInt(e.target.value, 10) || 2026 })}
+                className="w-full px-3.5 h-11 sm:h-12 text-sm rounded-xl border border-[#E5DED2] bg-[#FFFEFB] text-[#111827] font-medium focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition-all"
+              >
+                <option value={2024}>2024</option>
+                <option value={2025}>2025</option>
+                <option value={2026}>2026</option>
+                <option value={2027}>2027</option>
+                <option value={2028}>2028</option>
+                <option value={2029}>2029</option>
+                <option value={2030}>2030</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Row 4: CGPA & College / University */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="cgpa" className="block text-xs font-bold text-[#192844]">
+                  CGPA (out of 10) <span className="text-[#B91C1C]">*</span>
+                </label>
+                <span className="text-[10px] font-semibold text-[#64748B]">Scale: 0.00 – 10.00</span>
+              </div>
+              <input
+                id="cgpa"
+                name="cgpa"
+                type="number"
+                step="0.01"
+                min="0"
+                max="10"
+                required
+                value={formData.cgpa}
+                onChange={handleCgpaChange}
+                placeholder="e.g. 8.0"
+                className="w-full px-3.5 h-11 sm:h-12 text-sm rounded-xl border border-[#E5DED2] bg-[#FFFEFB] text-[#111827] font-medium placeholder:text-[#8A8F98] focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="college" className="block text-xs font-bold text-[#192844] mb-1.5">
+                College / University <span className="text-[#B91C1C]">*</span>
+              </label>
+              <input
+                id="college"
+                name="college"
+                type="text"
+                required
+                value={formData.college}
+                onChange={(e) => setFormData({ ...formData, college: e.target.value })}
+                placeholder="e.g. CMRIT"
+                className="w-full px-3.5 h-11 sm:h-12 text-sm rounded-xl border border-[#E5DED2] bg-[#FFFEFB] text-[#111827] font-medium placeholder:text-[#8A8F98] focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Row 5: Degree Program & Branch / Major */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="degree" className="block text-xs font-bold text-[#192844] mb-1.5">
+                Degree Program <span className="text-[#B91C1C]">*</span>
+              </label>
+              <select
+                id="degree"
+                name="degree"
+                value={formData.degree}
+                onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
+                className="w-full px-3.5 h-11 sm:h-12 text-sm rounded-xl border border-[#E5DED2] bg-[#FFFEFB] text-[#111827] font-medium focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition-all"
+              >
+                <option value="B.Tech / B.E.">B.Tech / B.E.</option>
+                <option value="B.S.">B.S. (Bachelor of Science)</option>
+                <option value="B.C.A.">B.C.A.</option>
+                <option value="M.Tech / M.E.">M.Tech / M.E.</option>
+                <option value="M.S.">M.S. (Master of Science)</option>
+                <option value="MCA">M.C.A.</option>
+                <option value="Dual Degree">Dual Degree (B.Tech + M.Tech)</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="branch" className="block text-xs font-bold text-[#192844] mb-1.5">
+                Branch / Major <span className="text-[#B91C1C]">*</span>
+              </label>
+              <input
+                id="branch"
+                name="branch"
+                type="text"
+                required
+                value={formData.branch}
+                onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+                placeholder="e.g. Computer Science"
+                className="w-full px-3.5 h-11 sm:h-12 text-sm rounded-xl border border-[#E5DED2] bg-[#FFFEFB] text-[#111827] font-medium placeholder:text-[#8A8F98] focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Privacy & Opportunity Matching Notice */}
+          <div className="flex items-center justify-center gap-2 pt-1 text-xs text-[#64748B]">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#64748B] shrink-0" />
+            <span>Your profile data will be used to show relevant placement opportunities.</span>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-12 mt-2 rounded-xl bg-[#192844] hover:bg-[#24375d] text-[#FFFFFF] text-sm font-semibold shadow-xs transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Creating Student Account...</span>
+              </div>
+            ) : (
+              <>
+                <span>Create account and continue</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Sign In Footer */}
+        <div className="pt-4 border-t border-[#E5DED2] text-center">
+          <p className="text-sm text-[#475569]">
+            Already have an account?{' '}
+            <Link
+              to="/login"
+              className="font-bold text-[#4F46E5] hover:text-[#3730A3] transition-colors"
+            >
+              Sign in
+            </Link>
+          </p>
         </div>
       </div>
-    </div>
+    </RegistrationLayout>
   );
 };

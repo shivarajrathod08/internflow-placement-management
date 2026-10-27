@@ -111,11 +111,16 @@ public class OfferService {
             if (!offer.getStudent().getId().equals(student.getId())) {
                 throw new ForbiddenException("You cannot accept or decline another candidate's offer.");
             }
-            if (oldStatus != OfferStatus.OFFERED) {
-                throw new BadRequestException("Offer cannot be responded to in state: " + oldStatus);
-            }
-            if (newStatus != OfferStatus.ACCEPTED && newStatus != OfferStatus.DECLINED) {
-                throw new BadRequestException("Students may only ACCEPT or DECLINE an offer.");
+            if (newStatus == OfferStatus.JOINED) {
+                if (oldStatus != OfferStatus.ACCEPTED) {
+                    throw new BadRequestException("Only an ACCEPTED offer can be marked as JOINED.");
+                }
+            } else if (newStatus == OfferStatus.ACCEPTED || newStatus == OfferStatus.DECLINED) {
+                if (oldStatus != OfferStatus.OFFERED) {
+                    throw new BadRequestException("Offer cannot be responded to in state: " + oldStatus);
+                }
+            } else {
+                throw new BadRequestException("Students may only ACCEPT, DECLINE, or confirm JOINED status for an offer.");
             }
         } else if (user.getRole() == Role.COMPANY || user.getRole() == Role.RECRUITER) {
             Long companyOwnerId = offer.getCompany().getUser().getId();
@@ -132,6 +137,16 @@ public class OfferService {
                 }
             } else {
                 throw new BadRequestException("Companies can only mark offers as REVOKED or JOINED.");
+            }
+        } else if (user.getRole() == Role.TPO || user.getRole() == Role.ADMIN || user.getRole() == Role.FACULTY_COORDINATOR) {
+            if (newStatus == OfferStatus.JOINED) {
+                if (oldStatus != OfferStatus.ACCEPTED) {
+                    throw new BadRequestException("Only an ACCEPTED offer can be marked as JOINED.");
+                }
+            } else if (newStatus == OfferStatus.REVOKED) {
+                if (oldStatus != OfferStatus.OFFERED && oldStatus != OfferStatus.ACCEPTED) {
+                    throw new BadRequestException("Only OFFERED or ACCEPTED offers can be revoked.");
+                }
             }
         }
 
@@ -164,8 +179,36 @@ public class OfferService {
                     "/company/applicants"
             );
         } else if (newStatus == OfferStatus.JOINED) {
-            offer.getApplication().setCurrentStatus(ApplicationStatus.IN_PROGRESS);
+            offer.getApplication().setCurrentStatus(ApplicationStatus.JOINED);
             applicationRepository.save(offer.getApplication());
+
+            // Notify Recruiter and Student
+            notificationService.createNotification(
+                    offer.getCompany().getUser().getId(),
+                    "Candidate Joined!",
+                    offer.getStudent().getFirstName() + " " + offer.getStudent().getLastName() +
+                            " confirmed Day 1 joining for " + offer.getDesignation() + ".",
+                    NotificationType.SUCCESS,
+                    "/company/applicants"
+            );
+            notificationService.createNotification(
+                    offer.getStudent().getUser().getId(),
+                    "Day 1 Joining Confirmed",
+                    "Your Day 1 joining with " + offer.getCompany().getCompanyName() + " has been successfully confirmed.",
+                    NotificationType.SUCCESS,
+                    "/student/offers"
+            );
+        } else if (newStatus == OfferStatus.REVOKED) {
+            offer.getApplication().setCurrentStatus(ApplicationStatus.REJECTED);
+            applicationRepository.save(offer.getApplication());
+
+            notificationService.createNotification(
+                    offer.getStudent().getUser().getId(),
+                    "Offer Revoked",
+                    "The offer from " + offer.getCompany().getCompanyName() + " for " + offer.getDesignation() + " has been revoked.",
+                    NotificationType.WARNING,
+                    "/student/offers"
+            );
         }
 
         auditService.log("UPDATE_OFFER_STATUS", "Offer", saved.getId(), oldStatus.name(), newStatus.name(),

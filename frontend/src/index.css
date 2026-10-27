@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-indigo-500 selection:text-white;
+    @apply bg-[#F7F4EE] text-slate-900 font-sans antialiased selection:bg-indigo-500 selection:text-white;
   }
 
   /* All form inputs, textareas, and dropdown selects use solid black text when typing */

@@ -15,10 +15,40 @@ import {
   ExternalLink,
   TrendingUp,
   UserCheck,
+  CheckCircle2,
 } from 'lucide-react';
 import { offersApi } from '../../api/services';
 import { Offer, OfferStatus, CreateOfferRequest } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+
+// Indian currency formatter: ₹1,20,000/month
+export const formatCurrencyINR = (amount?: number | null): string => {
+  if (amount === undefined || amount === null || isNaN(amount)) {
+    return '₹50,000/month';
+  }
+  const formatted = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(amount);
+  return `${formatted}/month`;
+};
+
+// Date formatter: e.g. 2026-12-20T23:34:34.647276 -> 20 Dec 2026
+export const formatDate = (dateStr?: string | null, fallback = 'Immediate'): string => {
+  if (!dateStr) return fallback;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+};
 
 export const OffersPage: React.FC = () => {
   const { user } = useAuth();
@@ -81,7 +111,8 @@ export const OffersPage: React.FC = () => {
       setError(null);
       const res = await offersApi.updateStatus(offerId, status, remarks);
       if (res.success) {
-        setSuccessMsg(`Offer status successfully updated to ${status}`);
+        const readableStatus = status === 'JOINED' ? 'Day 1 Joining Confirmed' : status;
+        setSuccessMsg(`Offer status successfully updated: ${readableStatus}`);
         setRejectModalOpen(false);
         setRejectionRemarks('');
         loadOffers();
@@ -98,7 +129,7 @@ export const OffersPage: React.FC = () => {
       setError(null);
       const res = await offersApi.create(issueForm);
       if (res.success) {
-        setSuccessMsg(`Offer extended to student successfully!`);
+        setSuccessMsg(`Formal offer extended to candidate successfully!`);
         setIssueModalOpen(false);
         loadOffers();
         setTimeout(() => setSuccessMsg(null), 4000);
@@ -110,6 +141,9 @@ export const OffersPage: React.FC = () => {
 
   const filteredOffers = offers.filter((o) => {
     if (filterStatus === 'ALL') return true;
+    if (filterStatus === 'DECLINED') {
+      return o.status === 'DECLINED' || o.status === 'REJECTED';
+    }
     return o.status === filterStatus;
   });
 
@@ -117,32 +151,39 @@ export const OffersPage: React.FC = () => {
     switch (status) {
       case 'OFFERED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-            <Clock className="w-3 h-3" /> OFFERED
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
+            <Clock className="w-3.5 h-3.5" /> OFFERED
           </span>
         );
       case 'ACCEPTED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <CheckCircle className="w-3 h-3" /> ACCEPTED
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-[#DCFCE7] text-[#15803D] border border-[#BBF7D0]">
+            <CheckCircle className="w-3.5 h-3.5" /> ACCEPTED
           </span>
         );
       case 'JOINED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-            <UserCheck className="w-3 h-3" /> JOINED
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-[#E0E7FF] text-[#4338CA] border border-[#C7D2FE]">
+            <UserCheck className="w-3.5 h-3.5" /> JOINED
           </span>
         );
+      case 'DECLINED':
       case 'REJECTED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-            <XCircle className="w-3 h-3" /> DECLINED
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]">
+            <XCircle className="w-3.5 h-3.5" /> DECLINED
           </span>
         );
       case 'REVOKED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
-            REVOKED
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-[#F1F5F9] text-[#475569] border border-[#CBD5E1]">
+            <AlertCircle className="w-3.5 h-3.5" /> REVOKED
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-200">
+            {status}
           </span>
         );
     }
@@ -150,25 +191,30 @@ export const OffersPage: React.FC = () => {
 
   // Staff KPI aggregations
   const totalOffersCount = offers.length;
-  const acceptedOffersCount = offers.filter((o) => o.status === 'ACCEPTED' || o.status === 'JOINED').length;
+  const acceptedOffersCount = offers.filter(
+    (o) => o.status === 'ACCEPTED' || o.status === 'JOINED'
+  ).length;
   const joinedOffersCount = offers.filter((o) => o.status === 'JOINED').length;
-  const acceptanceRate = totalOffersCount > 0 ? Math.round((acceptedOffersCount / totalOffersCount) * 100) : 0;
+  const acceptanceRate =
+    totalOffersCount > 0 ? Math.round((acceptedOffersCount / totalOffersCount) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6 animate-in fade-in duration-200">
+      {/* Campus Ledger Warm Editorial Header */}
+      <div className="relative rounded-2xl bg-[#FFFCF7] border border-[#E5DED2] p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs uppercase tracking-wider font-semibold text-indigo-300">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#786E5E]">
               Placement & Internship Lifecycle
             </span>
-            <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-xs px-2.5 py-0.5 rounded-full font-medium">
+            <span className="bg-[#E5DCCB] text-[#192844] border border-[#D8CEBC] text-[11px] px-2.5 py-0.5 rounded-full font-bold">
               Offers & Onboarding
             </span>
           </div>
-          <h1 className="text-3xl font-extrabold">Offers & Joining Management</h1>
-          <p className="text-slate-300 text-sm mt-1 max-w-xl">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#192844] tracking-tight">
+            Offers & Joining Management
+          </h1>
+          <p className="text-[#475569] text-sm mt-1 max-w-xl">
             {isStudent
               ? 'Review official job offers, view stipends, access offer letters, and confirm your joining commitment.'
               : isCompany
@@ -179,8 +225,11 @@ export const OffersPage: React.FC = () => {
 
         {isCompany && (
           <button
-            onClick={() => setIssueModalOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/30"
+            onClick={() => {
+              setError(null);
+              setIssueModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-[#4F46E5] hover:bg-[#4338CA] transition-all shadow-md active:scale-95 shrink-0"
           >
             <Plus className="w-4 h-4" />
             Issue Formal Offer
@@ -189,78 +238,105 @@ export const OffersPage: React.FC = () => {
       </div>
 
       {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 shrink-0" />
-          <span>{successMsg}</span>
+        <div className="p-4 bg-[#F0FDF4] border border-[#BBF7D0] text-[#15803D] rounded-xl text-sm flex items-center justify-between gap-2 shadow-sm">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-[#15803D]" />
+            <span className="font-medium">{successMsg}</span>
+          </div>
+          <button
+            onClick={() => setSuccessMsg(null)}
+            className="text-[#15803D] hover:text-[#166534] p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{error}</span>
+        <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] text-[#B91C1C] rounded-xl text-sm flex items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-[#B91C1C]" />
+            <span className="font-medium">{error}</span>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-[#B91C1C] hover:text-[#991B1B] p-1 rounded-lg"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {/* Staff KPI Statistics Cards */}
       {isStaffOrAdmin && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+          <div className="bg-[#FFFCF7] p-5 rounded-2xl border border-[#E5DED2] shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500">Total Offers Extended</span>
-              <Award className="w-5 h-5 text-indigo-600" />
+              <span className="text-xs font-bold text-[#786E5E] uppercase tracking-wider">
+                Total Offers Extended
+              </span>
+              <Award className="w-5 h-5 text-[#4F46E5]" />
             </div>
-            <div className="text-2xl font-black text-gray-900 mt-2">{totalOffersCount}</div>
-            <span className="text-[11px] text-gray-400">Across all registered drives</span>
+            <div className="text-2xl font-black text-[#192844] mt-2">{totalOffersCount}</div>
+            <span className="text-[11px] text-[#64748B]">Across all registered drives</span>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+          <div className="bg-[#FFFCF7] p-5 rounded-2xl border border-[#E5DED2] shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500">Accepted Offers</span>
-              <CheckCircle className="w-5 h-5 text-emerald-600" />
+              <span className="text-xs font-bold text-[#786E5E] uppercase tracking-wider">
+                Accepted Offers
+              </span>
+              <CheckCircle className="w-5 h-5 text-[#15803D]" />
             </div>
-            <div className="text-2xl font-black text-emerald-950 mt-2">{acceptedOffersCount}</div>
-            <span className="text-[11px] text-emerald-600 font-medium">Offers confirmed by students</span>
+            <div className="text-2xl font-black text-[#15803D] mt-2">{acceptedOffersCount}</div>
+            <span className="text-[11px] text-[#15803D] font-medium">Offers confirmed by students</span>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+          <div className="bg-[#FFFCF7] p-5 rounded-2xl border border-[#E5DED2] shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500">Joined Students</span>
-              <UserCheck className="w-5 h-5 text-indigo-600" />
+              <span className="text-xs font-bold text-[#786E5E] uppercase tracking-wider">
+                Joined Students
+              </span>
+              <UserCheck className="w-5 h-5 text-[#4338CA]" />
             </div>
-            <div className="text-2xl font-black text-indigo-950 mt-2">{joinedOffersCount}</div>
-            <span className="text-[11px] text-indigo-600 font-medium">Active at company sites</span>
+            <div className="text-2xl font-black text-[#192844] mt-2">{joinedOffersCount}</div>
+            <span className="text-[11px] text-[#4338CA] font-medium">Active at company sites</span>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+          <div className="bg-[#FFFCF7] p-5 rounded-2xl border border-[#E5DED2] shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500">Offer Acceptance Rate</span>
-              <TrendingUp className="w-5 h-5 text-purple-600" />
+              <span className="text-xs font-bold text-[#786E5E] uppercase tracking-wider">
+                Acceptance Rate
+              </span>
+              <TrendingUp className="w-5 h-5 text-[#7C3AED]" />
             </div>
-            <div className="text-2xl font-black text-purple-950 mt-2">{acceptanceRate}%</div>
-            <span className="text-[11px] text-purple-600 font-medium">Student conversion ratio</span>
+            <div className="text-2xl font-black text-[#192844] mt-2">{acceptanceRate}%</div>
+            <span className="text-[11px] text-[#7C3AED] font-medium">Student conversion ratio</span>
           </div>
         </div>
       )}
 
       {/* Filter Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-4">
-        <div className="flex items-center gap-2">
-          {['ALL', 'OFFERED', 'ACCEPTED', 'JOINED', 'REJECTED'].map((st) => (
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E5DED2] pb-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          {['ALL', 'OFFERED', 'ACCEPTED', 'JOINED', 'DECLINED'].map((st) => (
             <button
               key={st}
-              onClick={() => setFilterStatus(st)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              onClick={() => {
+                setError(null);
+                setFilterStatus(st);
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 filterStatus === st
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  ? 'bg-[#192844] text-[#FFFCF7] shadow-sm'
+                  : 'bg-[#FFFCF7] text-[#475569] hover:bg-[#EAE3D6]/60 border border-[#E5DED2]'
               }`}
             >
               {st}
             </button>
           ))}
         </div>
-        <div className="text-xs text-gray-500 font-medium">
+        <div className="text-xs text-[#786E5E] font-medium">
           Showing {filteredOffers.length} of {offers.length} offer records
         </div>
       </div>
@@ -269,14 +345,17 @@ export const OffersPage: React.FC = () => {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-44 bg-white rounded-2xl border border-gray-100 animate-pulse" />
+            <div
+              key={i}
+              className="h-48 bg-[#FFFCF7] rounded-2xl border border-[#E5DED2] animate-pulse"
+            />
           ))}
         </div>
       ) : filteredOffers.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center space-y-4">
-          <Award className="w-12 h-12 text-gray-300 mx-auto" />
-          <h3 className="font-bold text-gray-900 text-lg">No offers found</h3>
-          <p className="text-gray-500 text-xs max-w-md mx-auto">
+        <div className="bg-[#FFFCF7] rounded-2xl border border-[#E5DED2] p-12 text-center space-y-4">
+          <Award className="w-12 h-12 text-[#A89F91] mx-auto" />
+          <h3 className="font-bold text-[#192844] text-lg">No offers found</h3>
+          <p className="text-[#64748B] text-xs max-w-md mx-auto">
             {isStudent
               ? 'When companies select your application and extend an offer, it will appear here for review and acceptance.'
               : 'No candidate offers match the selected status filter.'}
@@ -284,128 +363,227 @@ export const OffersPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredOffers.map((offer) => (
-            <div
-              key={offer.id}
-              className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-            >
-              <div className="space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-gray-400" />
-                      <span className="text-xs font-bold text-gray-700">{offer.companyName}</span>
+          {filteredOffers.map((offer) => {
+            const isOfferDeclined = offer.status === 'DECLINED' || offer.status === 'REJECTED';
+            const isOfferAccepted = offer.status === 'ACCEPTED';
+            const isOfferOffered = offer.status === 'OFFERED';
+            const isOfferJoined = offer.status === 'JOINED';
+
+            return (
+              <div
+                key={offer.id}
+                className="bg-[#FFFCF7] rounded-2xl border border-[#E5DED2] p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-[#786E5E]" />
+                        <span className="text-xs font-bold text-[#786E5E] uppercase tracking-wider">
+                          {offer.companyName}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-bold text-[#192844] mt-1">
+                        {offer.designation || offer.internshipTitle}
+                      </h3>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mt-1">
-                      {offer.designation || offer.internshipTitle}
-                    </h3>
+                    {getStatusBadge(offer.status)}
                   </div>
-                  {getStatusBadge(offer.status)}
+
+                  {/* Candidate details (for recruiters / TPO) */}
+                  {!isStudent && (
+                    <div className="p-3 bg-[#F7F4EE] rounded-xl text-xs space-y-1 border border-[#E5DED2]">
+                      <div className="font-bold text-[#192844]">
+                        Candidate: {offer.studentName}{' '}
+                        {offer.studentRollNumber && (
+                          <span className="text-[#64748B] font-normal">
+                            ({offer.studentRollNumber})
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-[#64748B]">
+                        {offer.studentBranch || 'Branch N/A'} • {offer.studentEmail}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Offer Details Grid */}
+                  <div className="grid grid-cols-3 gap-2.5 p-3.5 bg-[#F7F4EE] rounded-xl border border-[#E5DED2] text-xs">
+                    <div>
+                      <span className="text-[#786E5E] block text-[10px] font-bold uppercase tracking-wider">
+                        Compensation
+                      </span>
+                      <span className="font-extrabold text-[#192844]">
+                        {formatCurrencyINR(offer.stipendOrSalary)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[#786E5E] block text-[10px] font-bold uppercase tracking-wider">
+                        Location
+                      </span>
+                      <span className="font-bold text-[#192844] truncate block">
+                        {offer.location || 'Bangalore, India'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[#786E5E] block text-[10px] font-bold uppercase tracking-wider">
+                        Joining Date
+                      </span>
+                      <span className="font-bold text-[#192844] truncate block">
+                        {formatDate(offer.joiningDate)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-[#786E5E] pt-1">
+                    <span>
+                      Offered on: <strong className="text-[#192844]">{formatDate(offer.offeredAt)}</strong>
+                    </span>
+                    {offer.offerLetterUrl && (
+                      <a
+                        href={offer.offerLetterUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 font-bold text-[#4F46E5] hover:text-[#3730A3]"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Offer Letter (.pdf)
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
+
+                  {offer.studentRemarks && (
+                    <div className="text-[11px] p-2.5 bg-[#FEF2F2] border border-[#FECACA] rounded-lg text-[#B91C1C]">
+                      <span className="font-bold">Candidate Feedback: </span>
+                      {offer.studentRemarks}
+                    </div>
+                  )}
                 </div>
 
-                {/* Candidate details (for recruiters / TPO) */}
-                {!isStudent && (
-                  <div className="p-2.5 bg-slate-50 rounded-xl text-xs space-y-1 border border-slate-100">
-                    <div className="font-bold text-slate-800">
-                      Candidate: {offer.studentName}{' '}
-                      {offer.studentRollNumber && (
-                        <span className="text-gray-500 font-normal">({offer.studentRollNumber})</span>
+                {/* State-aware Actions for Students */}
+                {isStudent && (
+                  <div className="pt-4 mt-4 border-t border-[#E5DED2] flex items-center justify-between">
+                    {isOfferOffered && (
+                      <>
+                        <span className="text-xs text-[#786E5E] font-medium">
+                          Response awaiting your decision
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setError(null);
+                              setRejectOfferId(offer.id);
+                              setRejectModalOpen(true);
+                            }}
+                            className="px-3.5 py-2 text-xs font-bold text-[#B91C1C] bg-[#FEE2E2] hover:bg-[#FECACA] border border-[#FCA5A5] rounded-xl transition-colors"
+                          >
+                            Decline
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(offer.id, 'ACCEPTED')}
+                            className="px-4 py-2 text-xs font-bold text-white bg-[#15803D] hover:bg-[#166534] rounded-xl shadow-md transition-all active:scale-95"
+                          >
+                            Accept Offer
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    {isOfferAccepted && (
+                      <>
+                        <span className="text-xs text-[#15803D] font-bold flex items-center gap-1.5">
+                          <CheckCircle className="w-4 h-4 text-[#15803D]" />
+                          Offer Accepted
+                        </span>
+                        <button
+                          onClick={() => handleUpdateStatus(offer.id, 'JOINED')}
+                          className="px-4 py-2 text-xs font-bold text-white bg-[#4F46E5] hover:bg-[#4338CA] rounded-xl shadow-md transition-all active:scale-95"
+                        >
+                          Confirm Day 1 Joining
+                        </button>
+                      </>
+                    )}
+
+                    {isOfferJoined && (
+                      <div className="w-full flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#E0E7FF] text-[#4338CA] border border-[#C7D2FE]">
+                          <UserCheck className="w-4 h-4" /> Day 1 Joining Confirmed
+                        </span>
+                        <span className="text-xs text-[#64748B] font-medium">
+                          Joining: {formatDate(offer.joiningDate)}
+                        </span>
+                      </div>
+                    )}
+
+                    {isOfferDeclined && (
+                      <div className="w-full flex items-center justify-between text-xs text-[#B91C1C]">
+                        <span className="font-semibold flex items-center gap-1">
+                          <XCircle className="w-3.5 h-3.5" /> Offer was declined
+                        </span>
+                        <span className="text-[11px] text-[#64748B]">No further response required</span>
+                      </div>
+                    )}
+
+                    {offer.status === 'REVOKED' && (
+                      <div className="w-full flex items-center justify-between text-xs text-[#64748B]">
+                        <span className="font-semibold flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5" /> Offer revoked by employer
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* State-aware Actions for Recruiters / Company */}
+                {isCompany && (
+                  <div className="pt-4 mt-4 border-t border-[#E5DED2] flex items-center justify-between">
+                    <span className="text-xs text-[#786E5E]">
+                      Status: <strong className="text-[#192844]">{offer.status}</strong>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {isOfferAccepted && (
+                        <button
+                          onClick={() => handleUpdateStatus(offer.id, 'JOINED')}
+                          className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#4338CA] hover:bg-[#3730A3] rounded-xl shadow-sm transition-all active:scale-95"
+                        >
+                          Mark as Joined
+                        </button>
+                      )}
+                      {(isOfferOffered || isOfferAccepted) && (
+                        <button
+                          onClick={() => handleUpdateStatus(offer.id, 'REVOKED')}
+                          className="px-3 py-1.5 text-xs font-semibold text-[#64748B] hover:text-[#B91C1C] hover:bg-[#FEE2E2]/60 rounded-xl transition-colors"
+                        >
+                          Revoke Offer
+                        </button>
                       )}
                     </div>
-                    <div className="text-[11px] text-gray-500">
-                      {offer.studentBranch || 'Branch N/A'} • {offer.studentEmail}
-                    </div>
-                  </div>
-                )}
-
-                {/* Offer Details Grid */}
-                <div className="grid grid-cols-3 gap-2 p-3 bg-indigo-50/40 rounded-xl border border-indigo-100/60 text-xs">
-                  <div>
-                    <span className="text-gray-400 block text-[10px]">Compensation / CTC</span>
-                    <span className="font-bold text-indigo-950">
-                      ₹{offer.stipendOrSalary?.toLocaleString() ?? '50,000'} /mo
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block text-[10px]">Location</span>
-                    <span className="font-bold text-gray-800 truncate block">
-                      {offer.location || 'Bangalore'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block text-[10px]">Joining Date</span>
-                    <span className="font-bold text-gray-800 truncate block">
-                      {offer.joiningDate || 'Immediate'}
-                    </span>
-                  </div>
-                </div>
-
-                {offer.offerLetterUrl && (
-                  <a
-                    href={offer.offerLetterUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    Download Official Offer Letter (.pdf)
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-
-                {offer.studentRemarks && (
-                  <div className="text-[11px] p-2 bg-rose-50 border border-rose-100 rounded-lg text-rose-800">
-                    <span className="font-semibold">Candidate Note: </span>
-                    {offer.studentRemarks}
                   </div>
                 )}
               </div>
-
-              {/* Action Buttons for Students */}
-              {isStudent && offer.status === 'OFFERED' && (
-                <div className="pt-4 mt-4 border-t border-gray-100 flex items-center justify-end gap-2">
-                  <button
-                    onClick={() => {
-                      setRejectOfferId(offer.id);
-                      setRejectModalOpen(true);
-                    }}
-                    className="px-3.5 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors"
-                  >
-                    Decline
-                  </button>
-                  <button
-                    onClick={() => handleUpdateStatus(offer.id, 'ACCEPTED')}
-                    className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-md transition-all"
-                  >
-                    Accept Offer
-                  </button>
-                </div>
-              )}
-
-              {isStudent && offer.status === 'ACCEPTED' && (
-                <div className="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5" /> Offer Accepted
-                  </span>
-                  <button
-                    onClick={() => handleUpdateStatus(offer.id, 'JOINED')}
-                    className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-md transition-all"
-                  >
-                    Confirm Day 1 Joining
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Decline Offer Modal */}
       {rejectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 duration-200">
-            <h3 className="font-bold text-slate-900 text-base">Decline Employment Offer</h3>
-            <p className="text-xs text-slate-500">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#FFFCF7] rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-[#E5DED2] space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-[#E5DED2] pb-3">
+              <h3 className="font-bold text-[#192844] text-base">Decline Employment Offer</h3>
+              <button
+                onClick={() => {
+                  setRejectModalOpen(false);
+                  setRejectionRemarks('');
+                }}
+                className="text-[#64748B] hover:text-[#192844] hover:bg-[#EAE3D6]/70 p-1.5 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-[#475569]">
               Are you sure you wish to decline this offer? Please provide feedback or reason for the company and placement cell records.
             </p>
             <textarea
@@ -413,20 +591,25 @@ export const OffersPage: React.FC = () => {
               value={rejectionRemarks}
               onChange={(e) => setRejectionRemarks(e.target.value)}
               placeholder="e.g. Accepted higher package offer / Pursuing higher studies..."
-              className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 focus:outline-none transition-colors"
+              className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-[#CBD5E1] rounded-xl placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#B91C1C] focus:border-[#B91C1C] focus:outline-none transition-colors"
             />
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setRejectModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                onClick={() => {
+                  setRejectModalOpen(false);
+                  setRejectionRemarks('');
+                }}
+                className="px-4 py-2 text-xs font-semibold text-[#475569] hover:bg-[#EAE3D6] rounded-xl transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => rejectOfferId && handleUpdateStatus(rejectOfferId, 'REJECTED', rejectionRemarks)}
-                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md transition-all active:scale-95"
+                onClick={() =>
+                  rejectOfferId && handleUpdateStatus(rejectOfferId, 'DECLINED', rejectionRemarks)
+                }
+                className="px-4 py-2 text-xs font-bold text-white bg-[#B91C1C] hover:bg-[#991B1B] rounded-xl shadow-md transition-all active:scale-95"
               >
                 Confirm Decline
               </button>
@@ -437,18 +620,18 @@ export const OffersPage: React.FC = () => {
 
       {/* Issue Formal Offer Modal (for Company) */}
       {issueModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#FFFCF7] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-[#E5DED2] space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-[#E5DED2] pb-3">
+              <h3 className="font-bold text-[#192844] text-lg flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#E0E7FF] border border-[#C7D2FE] flex items-center justify-center text-[#4338CA]">
                   <Award className="w-5 h-5" />
                 </div>
                 Issue Formal Candidate Offer
               </h3>
               <button
                 onClick={() => setIssueModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-xl transition-colors"
+                className="text-[#64748B] hover:text-[#192844] hover:bg-[#EAE3D6]/70 p-1.5 rounded-xl transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -456,7 +639,7 @@ export const OffersPage: React.FC = () => {
 
             <form onSubmit={handleIssueOffer} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-900 mb-1.5">
+                <label className="block text-xs font-bold text-[#192844] mb-1.5">
                   Application ID *
                 </label>
                 <input
@@ -467,26 +650,28 @@ export const OffersPage: React.FC = () => {
                   onChange={(e) =>
                     setIssueForm({ ...issueForm, applicationId: parseInt(e.target.value) || 0 })
                   }
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-[#CBD5E1] rounded-xl placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#4F46E5] focus:border-[#4F46E5] focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-900 mb-1.5">Designation *</label>
+                <label className="block text-xs font-bold text-[#192844] mb-1.5">
+                  Designation *
+                </label>
                 <input
                   type="text"
                   required
                   value={issueForm.designation}
                   onChange={(e) => setIssueForm({ ...issueForm, designation: e.target.value })}
                   placeholder="e.g. Associate Software Engineer / Frontend Intern"
-                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                  className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-[#CBD5E1] rounded-xl placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#4F46E5] focus:border-[#4F46E5] focus:outline-none transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-900 mb-1.5">
-                    Compensation / Monthly Stipend (₹) *
+                  <label className="block text-xs font-bold text-[#192844] mb-1.5">
+                    Monthly Compensation (₹) *
                   </label>
                   <input
                     type="number"
@@ -498,34 +683,36 @@ export const OffersPage: React.FC = () => {
                         stipendOrSalary: parseInt(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-[#CBD5E1] rounded-xl placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#4F46E5] focus:border-[#4F46E5] focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-900 mb-1.5">Location</label>
+                  <label className="block text-xs font-bold text-[#192844] mb-1.5">Location</label>
                   <input
                     type="text"
                     value={issueForm.location}
                     onChange={(e) => setIssueForm({ ...issueForm, location: e.target.value })}
                     placeholder="e.g. Bangalore, India"
-                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-[#CBD5E1] rounded-xl placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#4F46E5] focus:border-[#4F46E5] focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-900 mb-1.5">Joining Date *</label>
+                  <label className="block text-xs font-bold text-[#192844] mb-1.5">
+                    Joining Date *
+                  </label>
                   <input
                     type="date"
                     required
                     value={issueForm.joiningDate}
                     onChange={(e) => setIssueForm({ ...issueForm, joiningDate: e.target.value })}
-                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-[#CBD5E1] rounded-xl placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#4F46E5] focus:border-[#4F46E5] focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-900 mb-1.5">
+                  <label className="block text-xs font-bold text-[#192844] mb-1.5">
                     Offer Letter Document URL
                   </label>
                   <input
@@ -533,7 +720,7 @@ export const OffersPage: React.FC = () => {
                     placeholder="https://.../offer-letter.pdf"
                     value={issueForm.offerLetterUrl || ''}
                     onChange={(e) => setIssueForm({ ...issueForm, offerLetterUrl: e.target.value })}
-                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-gray-300 rounded-xl placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 text-xs font-medium text-black bg-white border border-[#CBD5E1] rounded-xl placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#4F46E5] focus:border-[#4F46E5] focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -542,13 +729,13 @@ export const OffersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIssueModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="px-4 py-2 text-xs font-semibold text-[#475569] hover:bg-[#EAE3D6] rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 active:scale-95 transition-all"
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#4F46E5] hover:bg-[#4338CA] rounded-xl shadow-md transition-all active:scale-95"
                 >
                   Dispatch Offer
                 </button>
@@ -560,4 +747,5 @@ export const OffersPage: React.FC = () => {
     </div>
   );
 };
+
 export default OffersPage;

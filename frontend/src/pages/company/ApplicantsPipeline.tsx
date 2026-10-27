@@ -26,7 +26,10 @@ import {
   AlertCircle,
   CheckCircle2,
   Video,
+  Loader2,
 } from 'lucide-react';
+import { fetchDocumentBlob, downloadDocument, viewDocumentInNewTab, getDocumentErrorMessage } from '../../utils/documentViewer';
+import DocumentPreviewModal from '../../components/common/DocumentPreviewModal';
 
 export const ApplicantsPipeline: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -58,6 +61,55 @@ export const ApplicantsPipeline: React.FC = () => {
 
   // Status Change State
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+
+  // Resume Viewing & Preview State
+  const [openingResumeId, setOpeningResumeId] = useState<number | null>(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState('');
+  const [previewFilename, setPreviewFilename] = useState('');
+  const [selectedAppForResume, setSelectedAppForResume] = useState<Application | null>(null);
+
+  const handleOpenResume = async (app: Application) => {
+    if (!app.studentResumeUrl) {
+      setError(`Candidate ${app.studentName} has not uploaded a resume document yet.`);
+      return;
+    }
+    setOpeningResumeId(app.id);
+    setError(null);
+    try {
+      const defaultFilename = `${app.studentName.replace(/\s+/g, '_')}_Resume.pdf`;
+      const result = await fetchDocumentBlob(app.studentResumeUrl, 'inline', defaultFilename);
+      setSelectedAppForResume(app);
+      setPreviewBlobUrl(result.objectUrl);
+      setPreviewFilename(result.filename || defaultFilename);
+      setPreviewTitle(`Candidate Resume: ${app.studentName} — ${app.internshipTitle}`);
+      setPreviewModalOpen(true);
+    } catch (err: any) {
+      setError(getDocumentErrorMessage(err));
+    } finally {
+      setOpeningResumeId(null);
+    }
+  };
+
+  const handleDownloadCandidateResume = async () => {
+    if (!selectedAppForResume?.studentResumeUrl) return;
+    try {
+      const defaultFilename = `${selectedAppForResume.studentName.replace(/\s+/g, '_')}_Resume.pdf`;
+      await downloadDocument(selectedAppForResume.studentResumeUrl, defaultFilename);
+    } catch (err: any) {
+      setError(getDocumentErrorMessage(err));
+    }
+  };
+
+  const handleClosePreviewModal = () => {
+    setPreviewModalOpen(false);
+    if (previewBlobUrl) {
+      window.URL.revokeObjectURL(previewBlobUrl);
+      setPreviewBlobUrl(null);
+    }
+    setSelectedAppForResume(null);
+  };
 
   useEffect(() => {
     fetchPostings();
@@ -397,17 +449,24 @@ export const ApplicantsPipeline: React.FC = () => {
                         )}
 
                         {/* Resume Shortcut */}
-                        {app.studentResumeUrl && (
-                          <a
-                            href={app.studentResumeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Open Resume"
-                            className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors inline-flex items-center"
-                          >
+                        <button
+                          type="button"
+                          onClick={() => handleOpenResume(app)}
+                          disabled={openingResumeId === app.id}
+                          title={app.studentResumeUrl ? `View Candidate Resume: ${app.studentName}` : `No resume uploaded by ${app.studentName}`}
+                          aria-label={`View Resume for ${app.studentName}`}
+                          className={`p-1.5 rounded-lg transition-colors inline-flex items-center disabled:opacity-50 ${
+                            app.studentResumeUrl
+                              ? 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-indigo-400 dark:hover:bg-slate-800'
+                              : 'text-gray-300 dark:text-gray-600 hover:text-gray-400 cursor-pointer'
+                          }`}
+                        >
+                          {openingResumeId === app.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                          ) : (
                             <FileText className="w-4 h-4" />
-                          </a>
-                        )}
+                          )}
+                        </button>
 
                         {/* History & Timeline */}
                         <button
@@ -547,8 +606,29 @@ export const ApplicantsPipeline: React.FC = () => {
       >
         {selectedAppForHistory && (
           <div className="space-y-6">
-            <div className="p-4 bg-gray-50 rounded-xl">
+            <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
               <ApplicationStepper currentStatus={selectedAppForHistory.currentStatus} />
+            </div>
+
+            {/* Candidate Resume Quick Access */}
+            <div className="flex items-center justify-between p-3.5 bg-[#FFFCF7] dark:bg-slate-800/80 border border-[#E5DED2] dark:border-slate-700 rounded-xl">
+              <div className="flex items-center gap-2.5">
+                <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span className="text-xs font-bold text-[#192844] dark:text-white">
+                  {selectedAppForHistory.studentResumeUrl ? 'Official Resume Attached' : 'No Resume Uploaded'}
+                </span>
+              </div>
+              {selectedAppForHistory.studentResumeUrl ? (
+                <button
+                  type="button"
+                  onClick={() => handleOpenResume(selectedAppForHistory)}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#192844] text-white hover:bg-[#2A3E63] transition-colors"
+                >
+                  View / Preview Resume
+                </button>
+              ) : (
+                <span className="text-xs text-slate-400 italic">Not available</span>
+              )}
             </div>
 
             {selectedAppForHistory.coverNote && (
@@ -578,6 +658,16 @@ export const ApplicantsPipeline: React.FC = () => {
           </div>
         )}
       </Modal>
+
+      {/* Candidate Resume Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={previewModalOpen}
+        onClose={handleClosePreviewModal}
+        title={previewTitle}
+        blobUrl={previewBlobUrl}
+        filename={previewFilename}
+        onDownload={handleDownloadCandidateResume}
+      />
     </div>
   );
 };

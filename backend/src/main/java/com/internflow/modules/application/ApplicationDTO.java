@@ -44,6 +44,12 @@ public class ApplicationDTO {
                 ? a.getStatusHistory().stream().map(ApplicationHistoryDTO::from).toList()
                 : List.of();
 
+        String rawResumeUrl = a.getStudent().getResumeUrl();
+        String studentResumeEndpoint = null;
+        if (rawResumeUrl != null && !rawResumeUrl.isBlank()) {
+            studentResumeEndpoint = "/api/applications/" + a.getId() + "/resume";
+        }
+
         return ApplicationDTO.builder()
                 .id(a.getId())
                 .internshipId(a.getInternship().getId())
@@ -59,7 +65,7 @@ public class ApplicationDTO {
                 .studentCollege(a.getStudent().getCollege())
                 .studentBranch(a.getStudent().getBranch())
                 .studentCgpa(a.getStudent().getCgpa())
-                .studentResumeUrl(a.getStudent().getResumeUrl())
+                .studentResumeUrl(studentResumeEndpoint)
                 .currentStatus(a.getCurrentStatus())
                 .coverNote(a.getCoverNote())
                 .matchScoreAtApplication(a.getMatchScoreAtApplication())

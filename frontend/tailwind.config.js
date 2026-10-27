@@ -7,6 +7,11 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        serif: ['"Instrument Serif"', 'Georgia', 'Cambria', 'serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
+      },
       colors: {
         brand: {
           50: '#f0f9ff',

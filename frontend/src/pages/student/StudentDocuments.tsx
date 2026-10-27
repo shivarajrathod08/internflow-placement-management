@@ -3,7 +3,8 @@ import apiClient from '../../api/client';
 import { Document, DocumentType, ApiResponse, Application, PageResponse } from '../../types';
 import Badge from '../../components/Badge';
 import Modal from '../../components/Modal';
-import { FileText, Upload, Download, CheckCircle2, AlertCircle, Clock, ShieldCheck, Plus, X } from 'lucide-react';
+import { FileText, Upload, Download, CheckCircle2, AlertCircle, Clock, ShieldCheck, Plus, X, Eye } from 'lucide-react';
+import { viewDocumentInNewTab, downloadDocument, getDocumentErrorMessage } from '../../utils/documentViewer';
 
 export const StudentDocuments: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -101,20 +102,17 @@ export const StudentDocuments: React.FC = () => {
 
   const handleDownload = async (doc: Document) => {
     try {
-      const response = await apiClient.get(`/documents/${doc.id}/download`, {
-        responseType: 'blob',
-      });
-      const blob = new Blob([response.data], { type: doc.mimeType || 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', doc.fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      await downloadDocument(`/documents/${doc.id}/download`, doc.fileName);
     } catch (err: any) {
-      setError('Unable to download file. You might lack permissions or the file is missing.');
+      setError(getDocumentErrorMessage(err));
+    }
+  };
+
+  const handlePreview = async (doc: Document) => {
+    try {
+      await viewDocumentInNewTab(`/documents/${doc.id}/download`, doc.fileName);
+    } catch (err: any) {
+      setError(getDocumentErrorMessage(err));
     }
   };
 
@@ -254,13 +252,24 @@ export const StudentDocuments: React.FC = () => {
                   <span>
                     {formatFileSize(doc.fileSize)} • {new Date(doc.uploadedAt).toLocaleDateString()}
                   </span>
-                  <button
-                    onClick={() => handleDownload(doc)}
-                    className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 font-medium py-1 px-2.5 rounded-lg hover:bg-indigo-50 transition-colors"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    Download
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handlePreview(doc)}
+                      className="inline-flex items-center gap-1.5 text-slate-700 hover:text-slate-900 font-medium py-1 px-2.5 rounded-lg hover:bg-slate-100 transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      Preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDownload(doc)}
+                      className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 font-medium py-1 px-2.5 rounded-lg hover:bg-indigo-50 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Download
+                    </button>
+                  </div>
                 </div>
               </div>
             );

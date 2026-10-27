@@ -7,6 +7,7 @@ import com.internflow.modules.application.Application;
 import com.internflow.modules.application.ApplicationRepository;
 import com.internflow.modules.application.ApplicationStatus;
 import com.internflow.modules.audit.AuditService;
+import com.internflow.modules.document.storage.StorageService;
 import com.internflow.modules.notification.NotificationService;
 import com.internflow.modules.notification.NotificationType;
 import com.internflow.modules.student.Student;
@@ -16,9 +17,7 @@ import com.internflow.modules.user.User;
 import com.internflow.modules.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,8 +26,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.*;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -43,9 +41,7 @@ public class DocumentService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final AuditService auditService;
-
-    @Value("${app.upload.dir:./uploads}")
-    private String uploadDir;
+    private final StorageService storageService;
 
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "application/pdf",
@@ -88,19 +84,17 @@ public class DocumentService {
 
         // Generate safe randomized filename
         String storedFileName = UUID.randomUUID().toString() + extension;
-        Path targetDir = Paths.get(uploadDir, type.name().toLowerCase());
+        String storageKey = type.name().toLowerCase() + "/" + storedFileName;
 
         try {
-            Files.createDirectories(targetDir);
-            Path targetPath = targetDir.resolve(storedFileName);
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            String storedLocation = storageService.store(storageKey, file.getInputStream(), file.getSize(), contentType);
 
             Document document = Document.builder()
                     .student(student)
                     .application(application)
                     .documentType(type)
                     .fileName(originalFilename)
-                    .filePath(targetPath.toString())
+                    .filePath(storedLocation)
                     .fileSize(file.getSize())
                     .mimeType(contentType)
                     .verificationStatus(VerificationStatus.PENDING)
@@ -197,10 +191,16 @@ public class DocumentService {
             if (document.getApplication() != null) {
                 Long companyOwnerId = document.getApplication().getInternship().getCompany().getUser().getId();
                 if (!companyOwnerId.equals(userId)) {
-                    throw new ForbiddenException("Access denied to candidate document");
+                    // Check if it's a resume and the student has applied to this recruiter's company
+                    boolean hasApplicationToCompany = applicationRepository.findByStudentId(document.getStudent().getId(), Pageable.unpaged())
+                            .stream()
+                            .anyMatch(app -> app.getInternship().getCompany().getUser().getId().equals(userId));
+                    if (!hasApplicationToCompany) {
+                        throw new ForbiddenException("Access denied to candidate document");
+                    }
                 }
             } else {
-                boolean hasApplicationToCompany = applicationRepository.findByStudentId(document.getStudent().getId(), org.springframework.data.domain.Pageable.unpaged())
+                boolean hasApplicationToCompany = applicationRepository.findByStudentId(document.getStudent().getId(), Pageable.unpaged())
                         .stream()
                         .anyMatch(app -> app.getInternship().getCompany().getUser().getId().equals(userId));
                 if (!hasApplicationToCompany) {
@@ -211,16 +211,25 @@ public class DocumentService {
             throw new ForbiddenException("Unauthorized to access student documents");
         }
 
+        if (document.getFilePath() != null && document.getFilePath().contains("..")) {
+            throw new BadRequestException("Invalid document path");
+        }
+
         try {
-            Path filePath = Paths.get(document.getFilePath()).normalize();
-            Resource resource = new UrlResource(filePath.toUri());
-            if (resource.exists() && resource.isReadable()) {
-                return resource;
-            } else {
-                throw new ResourceNotFoundException("File not found on storage: " + document.getFileName());
-            }
-        } catch (MalformedURLException ex) {
-            throw new ResourceNotFoundException("File path invalid");
+            return storageService.loadAsResource(document.getFilePath());
+        } catch (BadRequestException ex) {
+            throw ex;
+        } catch (ResourceNotFoundException ex) {
+            // Check if fallback by filename is possible (e.g. for legacy seed documents)
+            String docTypeDir = document.getDocumentType() != null ? document.getDocumentType().name().toLowerCase() : "resume";
+            String fallbackKey = docTypeDir + "/" + Paths.get(document.getFilePath()).getFileName().toString();
+            try {
+                return storageService.loadAsResource(fallbackKey);
+            } catch (Exception ignored) {}
+            throw ex;
+        } catch (Exception ex) {
+            log.error("Failed to load document id {}: {}", docId, ex.getMessage());
+            throw new ResourceNotFoundException("File not found on storage: " + document.getFileName());
         }
     }
 

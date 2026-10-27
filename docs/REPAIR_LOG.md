@@ -266,3 +266,75 @@ This log details the complete set of source code, configuration, and architectur
   - Created `ProductionSecuritySanitizer.java` activated under Spring profile `prod`.
   - Queries and deactivates any seed accounts retaining default demo passwords (`Password@123`), neutralizing credential exploitation on live deployments without modifying historical Flyway migrations.
 - **Verification:** Context builds and initializes cleanly under all environments.
+
+---
+
+### Record ID: REP-DOC-01
+- **Vulnerability / Defect:** Student Resume Access HTTP 403 Forbidden Error
+- **Root Cause:**
+  1. The student resume link in `StudentProfile.tsx` was implemented as a raw unauthenticated anchor tag `<a href={profile.resumeUrl} target="_blank">`.
+  2. Clicking the link executed a native browser GET request to `/api/documents/{id}/download`.
+  3. Plain browser tab navigations do not send the `Authorization: Bearer <token>` header stored in React client memory / `localStorage`.
+  4. Spring Security intercepted the unauthenticated request to `/api/documents/**`, rejected it with HTTP 401/403, and the browser displayed `HTTP ERROR 403 — Access to localhost was denied`.
+  5. In addition, seed data in `V3__seed_demo_platform_data.sql` stored legacy unmapped paths (`/uploads/resumes/alex_rivera_resume.pdf`) and the physical files were missing from disk storage.
+- **Files Modified:**
+  - `backend/src/main/java/com/internflow/security/JwtAuthenticationFilter.java`
+  - `backend/src/main/java/com/internflow/modules/document/DocumentController.java`
+  - `backend/src/main/java/com/internflow/modules/document/DocumentService.java`
+  - `backend/src/main/resources/db/migration/V5__fix_document_paths_and_resume_urls.sql`
+  - `frontend/src/utils/documentViewer.ts` (created)
+  - `frontend/src/components/common/DocumentPreviewModal.tsx` (created)
+  - `frontend/src/pages/student/StudentProfile.tsx`
+  - `frontend/src/pages/student/StudentDocuments.tsx`
+  - `backend/src/test/java/com/internflow/modules/document/DocumentServiceTest.java` (created)
+  - `backend/src/test/java/com/internflow/modules/document/DocumentControllerTest.java` (created)
+  - `frontend/src/test/documentViewer.test.ts` (created)
+  - `frontend/src/test/StudentProfileResume.test.tsx` (created)
+- **Changes Applied:**
+  - Created centralized authenticated document helper `documentViewer.ts` fetching documents via Axios with `responseType: 'blob'`, injecting Bearer token, extracting headers, creating temporary Object URLs, and revoking them safely.
+  - Implemented `DocumentPreviewModal.tsx` with Campus Ledger editorial styling (`#FFFCF7` card, `#192844` heading, `#E5DED2` border), offering inline PDF viewing, new tab option, and download action.
+  - Upgraded `StudentProfile.tsx` (Tab 6: Resume Document) with separate "View / Preview" and "Download" buttons, loading spinners, and Campus Ledger error alerts.
+  - Hardened backend `DocumentService.java` with path traversal prevention (`..` rejection), multi-strategy physical file resolution, seed demo PDF materialization for missing test documents, and clean JSON 404 responses.
+  - Added query parameter `?token=` fallback support in `JwtAuthenticationFilter` for `/api/documents/**`.
+  - Added `V5__fix_document_paths_and_resume_urls.sql` migration normalizing student `resume_url` records to `/api/documents/{id}/download`.
+- **Verification:**
+  - `DocumentServiceTest` passed with 7/7 tests.
+  - `DocumentControllerTest` passed with 8/8 tests.
+  - `documentViewer.test.ts` passed with 14/14 tests.
+  - `StudentProfileResume.test.tsx` passed with 4/4 tests.
+
+---
+
+### Record ID: REP-DOC-02
+- **Vulnerability / Defect:** Recruiter Candidate Resume 404 - Page Not Found Navigation Error
+- **Root Cause:**
+  1. In `ApplicantsPipeline.tsx`, the candidate resume shortcut was rendered as `<a href={app.studentResumeUrl} target="_blank">`.
+  2. In the seeded database, `app.studentResumeUrl` was `/uploads/resumes/alex_rivera_resume.pdf`.
+  3. Clicking the link triggered client-side browser navigation to `http://localhost:5173/uploads/resumes/alex_rivera_resume.pdf`.
+  4. React Router had no route registered for `/uploads/**`, so it matched the fallback `<Route path="*" element={<NotFound />} />` and displayed the InternFlow `404 - Page Not Found` component.
+  5. If the candidate had no uploaded resume (`studentResumeUrl` null or missing), the button was either hidden or caused confusion, with no clear messaging provided to the recruiter.
+- **Files Modified:**
+  - `backend/src/main/java/com/internflow/modules/application/ApplicationDTO.java`
+  - `backend/src/main/java/com/internflow/modules/application/ApplicationController.java`
+  - `backend/src/main/java/com/internflow/modules/application/ApplicationService.java`
+  - `backend/src/main/java/com/internflow/security/JwtAuthenticationFilter.java`
+  - `frontend/src/pages/company/ApplicantsPipeline.tsx`
+  - `backend/src/test/java/com/internflow/modules/application/ApplicationResumeTest.java` (created)
+  - `frontend/src/test/ApplicantsPipelineResume.test.tsx` (created)
+- **Changes Applied:**
+  - Implemented application-level resume endpoint `GET /api/applications/{id}/resume` in `ApplicationController.java` and `ApplicationService.java`.
+  - Enforced strict object-level authorization: recruiters can only view resumes for candidates who applied to an opportunity owned by their company; student callers can only access their own applications; institutional staff (Admin/TPO) retain platform access. Unauthorized cross-company attempts return HTTP 403 Forbidden.
+  - Normalized `ApplicationDTO.studentResumeUrl` to `/api/applications/{id}/resume` when candidate has a resume; remains null if candidate has no resume.
+  - Candidates with no resume return a clean HTTP 404 with JSON message `"Candidate <name> has not uploaded a resume document yet."`.
+  - In `ApplicantsPipeline.tsx`:
+    - Replaced raw `<a href>` with an authenticated button integrating `DocumentPreviewModal`.
+    - Added loading spinner on the candidate row while the resume stream is fetched.
+    - Candidates without resumes have an explicit status and clicking shows a friendly notice: `"Candidate <name> has not uploaded a resume document yet."`.
+    - Preserved candidate pipeline table, search, filters, and state without any navigation to 404.
+    - Added resume preview access inside the application lifecycle and history modal.
+- **Verification:**
+  - `ApplicationResumeTest` passed with 8/8 tests.
+  - `ApplicantsPipelineResume.test.tsx` passed with 4/4 tests.
+  - Full backend test suite passed with 45/45 tests.
+  - Full frontend test suite passed with 67/67 tests (13 test files).
+  - Production frontend build `npm run build` succeeded cleanly in 9.61s.

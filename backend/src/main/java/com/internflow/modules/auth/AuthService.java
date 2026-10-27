@@ -72,6 +72,8 @@ public class AuthService {
 
         auditService.log("USER_LOGIN", "User", userDetails.getId(), null, null, "Successful login for " + userDetails.getUsername());
 
+        User user = userRepository.findById(userDetails.getId()).orElse(null);
+
         return AuthResponse.builder()
                 .token(jwt)
                 .userId(userDetails.getId())
@@ -79,6 +81,9 @@ public class AuthService {
                 .role(userDetails.getRole())
                 .profileId(profileId)
                 .name(name)
+                .active(user != null && user.isActive())
+                .createdAt(user != null ? user.getCreatedAt() : null)
+                .updatedAt(user != null ? user.getUpdatedAt() : null)
                 .build();
     }
 
@@ -223,6 +228,24 @@ public class AuthService {
                 .role(user.getRole())
                 .profileId(profileId)
                 .name(name)
+                .active(user.isActive())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
                 .build();
+    }
+
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("Current password does not match");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        auditService.log("PASSWORD_CHANGE", "User", userId, null, null, "Password updated successfully for " + user.getEmail());
     }
 }

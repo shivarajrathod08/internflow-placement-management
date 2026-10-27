@@ -33,6 +33,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               role: res.data.data.role,
               name: res.data.data.name,
               profileId: res.data.data.profileId,
+              active: res.data.data.active,
+              createdAt: res.data.data.createdAt,
+              updatedAt: res.data.data.updatedAt,
             };
             setUser(u);
             localStorage.setItem('internflow_user', JSON.stringify(u));
@@ -62,6 +65,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: authData.role,
       name: authData.name,
       profileId: authData.profileId,
+      active: authData.active,
+      createdAt: authData.createdAt,
+      updatedAt: authData.updatedAt,
     };
     setUser(u);
     localStorage.setItem('internflow_user', JSON.stringify(u));
@@ -85,6 +91,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: res.data.data.role,
           name: res.data.data.name,
           profileId: res.data.data.profileId,
+          active: res.data.data.active,
+          createdAt: res.data.data.createdAt,
+          updatedAt: res.data.data.updatedAt,
         };
         setUser(u);
         localStorage.setItem('internflow_user', JSON.stringify(u));

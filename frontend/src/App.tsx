@@ -33,6 +33,7 @@ import { CompanyInterviews } from './pages/company/CompanyInterviews';
 
 // Admin / Placement Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminProfile } from './pages/admin/AdminProfile';
 import { CompanyApprovals } from './pages/admin/CompanyApprovals';
 import { InternshipApprovals } from './pages/admin/InternshipApprovals';
 import { DocumentVerifications } from './pages/admin/DocumentVerifications';
@@ -41,6 +42,15 @@ import { AuditLogs } from './pages/admin/AuditLogs';
 import { PlacementDrivesPage } from './pages/drives/PlacementDrivesPage';
 import { OffersPage } from './pages/offers/OffersPage';
 import { StudentVerificationPage } from './pages/admin/StudentVerificationPage';
+
+// Helper component to redirect /profile based on role
+const ProfileRedirect: React.FC = () => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === 'STUDENT') return <Navigate to="/student/profile" replace />;
+  if (user.role === 'COMPANY' || user.role === 'RECRUITER') return <Navigate to="/company/profile" replace />;
+  return <Navigate to="/admin/profile" replace />;
+};
 
 // Protected Route Component
 interface ProtectedRouteProps {
@@ -283,9 +293,30 @@ export const App: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/profile"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'TPO', 'FACULTY_COORDINATOR']}>
+                    <AdminProfile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute allowedRoles={['STUDENT', 'COMPANY', 'RECRUITER', 'ADMIN', 'TPO', 'FACULTY_COORDINATOR']}>
+                    <ProfileRedirect />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
 
-            {/* Catch all */}
+            {/* Role dashboard base redirects */}
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/company" element={<Navigate to="/company/dashboard" replace />} />
+            <Route path="/student" element={<Navigate to="/student/dashboard" replace />} />
+
+            {/* Catch all - 404 for unknown routes */}
             <Route path="*" element={<Navigate to="/404" replace />} />
           </Routes>
         </NotificationProvider>
