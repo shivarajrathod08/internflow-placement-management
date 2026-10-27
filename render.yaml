@@ -31,7 +31,7 @@ services:
         generateValue: true
       # CORS: Frontend Origin(s)
       - key: CORS_ALLOWED_ORIGINS
-        value: https://internflow-frontend.onrender.com,https://internflow-web.onrender.com,http://localhost:5173
+        value: https://internflow-frontend.onrender.com,https://internflow-web.onrender.com,https://*.onrender.com,http://localhost:5173
       # Storage Engine: Local Storage (Demo Mode - Zero Configuration)
       # Uses container filesystem (/app/storage) for resume upload/view/download.
       # NOTE: Free-tier container storage is ephemeral and resets on restart/spin-down.
@@ -52,7 +52,7 @@ services:
     autoDeploy: true
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://internflow-backend.onrender.com/api
+        value: https://internflow-backend-39ak.onrender.com/api
       - key: VITE_ENABLE_DEMO_LOGIN
         value: "false"
     routes:
