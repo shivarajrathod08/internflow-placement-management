@@ -1,6 +1,6 @@
 # ==============================================================================
 # InternFlow Zero-Paid-Service Demo Blueprint (Render IaC)
-# 100% Free Tier - No Credit Card / No External Cloud Storage Required
+# 100% Free Tier - Uses Existing Free PostgreSQL Database
 # https://render.com/docs/blueprint-spec
 # ==============================================================================
 
@@ -20,10 +20,11 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      # Managed PostgreSQL Connection
+      # Existing Managed PostgreSQL Connection
+      # Replace 'REPLACE_WITH_EXISTING_DATABASE_NAME' with the actual name of your existing Render database (e.g., 'internflow-postgres' or your existing DB name)
       - key: DATABASE_URL
         fromDatabase:
-          name: internflow-postgres
+          name: REPLACE_WITH_EXISTING_DATABASE_NAME
           property: connectionString
       # Security & JWT Token Generation
       - key: JWT_SECRET
@@ -58,16 +59,3 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
-
-# ------------------------------------------------------------------------------
-# 3. Managed PostgreSQL Database - Free Tier
-# NOTE: Render's free PostgreSQL database expires 30 days after creation.
-# For a permanent free database, see docs/DEPLOYMENT.md for Neon / Supabase setup.
-# ------------------------------------------------------------------------------
-databases:
-  - name: internflow-postgres
-    databaseName: internflow_db
-    user: internflow_user
-    plan: free
-    region: oregon
-    postgresMajorVersion: 16
