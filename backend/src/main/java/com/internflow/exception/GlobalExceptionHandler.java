@@ -6,6 +6,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -51,13 +54,27 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+    @ExceptionHandler({DisabledException.class, LockedException.class})
+    public ResponseEntity<ErrorResponse> handleAccountStatusException(AuthenticationException ex, HttpServletRequest request) {
+        log.warn("Account access rejected for URI {}: {}", request.getRequestURI(), ex.getMessage());
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("ACCOUNT_DISABLED")
+                .message("Your account is currently inactive or pending administrator approval.")
+                .path(request.getRequestURI())
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex, HttpServletRequest request) {
+        log.warn("Authentication failed for URI {}: {}", request.getRequestURI(), ex.getMessage());
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("AUTHENTICATION_FAILED")
-                .message("Invalid email or password.")
+                .message("Invalid email or password. Please verify your credentials.")
                 .path(request.getRequestURI())
                 .build();
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);

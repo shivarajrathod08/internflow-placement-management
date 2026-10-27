@@ -43,6 +43,9 @@ app:
       path-style-access: ${S3_PATH_STYLE_ACCESS:true}
   demo:
     seed-enabled: false
+  security:
+    initial-admin-email: ${INITIAL_ADMIN_EMAIL:admin@internflow.edu}
+    initial-admin-password: ${INITIAL_ADMIN_PASSWORD:}
 
 management:
   endpoints:

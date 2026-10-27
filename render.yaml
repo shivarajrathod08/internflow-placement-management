@@ -29,6 +29,11 @@ services:
       # Security & JWT Token Generation
       - key: JWT_SECRET
         generateValue: true
+      # Secure Initial Production Administrator Provisioning
+      - key: INITIAL_ADMIN_EMAIL
+        value: admin@internflow.edu
+      - key: INITIAL_ADMIN_PASSWORD
+        generateValue: true
       # CORS: Frontend Origin(s)
       - key: CORS_ALLOWED_ORIGINS
         value: https://internflow-frontend.onrender.com,https://internflow-web.onrender.com,https://*.onrender.com,http://localhost:5173

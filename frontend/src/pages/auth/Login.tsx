@@ -60,14 +60,17 @@ export const Login: React.FC = () => {
     } catch (err: any) {
       // Clean, sanitized error message without exposing backend stack traces
       const serverMessage = err.response?.data?.message;
-      if (err.response?.status === 401 || err.response?.status === 400) {
+      const status = err.response?.status;
+      if (status === 401 || status === 400) {
         setError(serverMessage || 'Invalid email or password. Please verify your credentials.');
-      } else if (err.response?.status === 403) {
-        setError('Your account is currently inactive or pending administrator approval.');
-      } else if (err.code === 'ERR_NETWORK') {
+      } else if (status === 403) {
+        setError(serverMessage || 'Your account is currently inactive or pending administrator approval.');
+      } else if (status === 500) {
+        setError(serverMessage || 'Internal server error occurred while processing authentication. Please try again later.');
+      } else if (err.code === 'ERR_NETWORK' || !err.response) {
         setError('Unable to reach authentication server. Please check your network connection.');
       } else {
-        setError('An authentication error occurred. Please try again.');
+        setError(serverMessage || 'An authentication error occurred. Please try again.');
       }
     } finally {
       setLoading(false);
