@@ -80,4 +80,31 @@ class ProductionSecuritySanitizerTest {
         assertEquals("$2a$10$newSecureEncodedHash", existingAdmin.getPasswordHash());
         verify(userRepository, atLeastOnce()).save(existingAdmin);
     }
+
+    @Test
+    @DisplayName("Preserves existing administrator password on subsequent restarts when already active")
+    void testPreservesExistingPasswordOnRestart() {
+        ReflectionTestUtils.setField(sanitizer, "initialAdminEmail", "admin@internflow.edu");
+        ReflectionTestUtils.setField(sanitizer, "initialAdminPassword", "InitialPassword2026!");
+
+        String userChangedPasswordHash = "$2a$10$customRotatedHashByUserInProfileSettings";
+
+        User existingActiveAdmin = User.builder()
+                .id(1L)
+                .email("admin@internflow.edu")
+                .passwordHash(userChangedPasswordHash)
+                .active(true)
+                .role(Role.ADMIN)
+                .build();
+
+        when(userRepository.findByEmail("admin@internflow.edu")).thenReturn(Optional.of(existingActiveAdmin));
+        when(passwordEncoder.matches("Password@123", userChangedPasswordHash)).thenReturn(false);
+
+        sanitizer.run();
+
+        // Password hash must NOT be overwritten on restart
+        assertEquals(userChangedPasswordHash, existingActiveAdmin.getPasswordHash(), "Existing active admin password must be preserved on restart");
+        assertTrue(existingActiveAdmin.isActive(), "Admin must remain active");
+        verify(passwordEncoder, never()).encode(anyString());
+    }
 }

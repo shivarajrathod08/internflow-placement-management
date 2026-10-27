@@ -70,14 +70,27 @@ public class ProductionSecuritySanitizer implements CommandLineRunner {
                             .passwordHash(passwordEncoder.encode(trimmedAdminPassword))
                             .active(true)
                             .build();
+                    userRepository.save(admin);
+                    adminConfigured = true;
+                    log.info("ProductionSecuritySanitizer: Initialized and activated production administrator '{}'.", trimmedAdminEmail);
                 } else {
-                    admin.setPasswordHash(passwordEncoder.encode(trimmedAdminPassword));
-                    admin.setActive(true);
-                    admin.setRole(Role.ADMIN);
+                    boolean isDefaultSeedPassword = DEFAULT_SEED_HASH.equals(admin.getPasswordHash())
+                            || passwordEncoder.matches("Password@123", admin.getPasswordHash());
+
+                    if (!admin.isActive() || isDefaultSeedPassword) {
+                        // Initial provisioning or upgrading from unrotated seed password
+                        admin.setPasswordHash(passwordEncoder.encode(trimmedAdminPassword));
+                        admin.setActive(true);
+                        admin.setRole(Role.ADMIN);
+                        userRepository.save(admin);
+                        adminConfigured = true;
+                        log.info("ProductionSecuritySanitizer: Provisioned and activated production administrator '{}' with initial credentials.", trimmedAdminEmail);
+                    } else {
+                        // Administrator already active with a customized, non-default password: preserve it across restarts
+                        adminConfigured = true;
+                        log.info("ProductionSecuritySanitizer: Production administrator '{}' is already active with custom credentials. Preserving existing password across restart.", trimmedAdminEmail);
+                    }
                 }
-                userRepository.save(admin);
-                adminConfigured = true;
-                log.info("ProductionSecuritySanitizer: Configured and activated production administrator '{}'.", trimmedAdminEmail);
             }
         }
 
