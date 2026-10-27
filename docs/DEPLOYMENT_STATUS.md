@@ -1,14 +1,22 @@
 # InternFlow — Production Deployment Status Report
 
-**Status**: 🟢 **READY FOR PRODUCTION ROLLOUT**  
+**Status**: 🟢 **READY FOR 100% FREE-TIER PRODUCTION ROLLOUT (ZERO COST)**  
 **Date**: October 27, 2026  
-**Target Platform**: Render (Static Site + Web Service + Managed PostgreSQL) & Cloudflare R2 / AWS S3
+**Target Platform**: Render Free Tier (Static Site + Web Service + PostgreSQL) & Cloudflare R2 (10GB Free Tier)
 
 ---
 
 ## 1. Executive Summary
 
-InternFlow has been audited, hardened, and configured for end-to-end cloud production deployment. All blockers related to containerization, dynamic port binding, database URL translation, client-side routing, and document storage have been resolved.
+InternFlow has been audited and adjusted for a **100% zero-cost deployment**. All declarations requiring credit card or paid billing on Render (such as `plan: standard` and paid persistent disks) have been eliminated. Resumes and offer documents remain secure via **Cloudflare R2 private object storage** without needing paid disks.
+
+### Cost Breakdown:
+- **Frontend**: Render Static Site = **$0 / month** (100% Free)
+- **Backend**: Render Web Service (`plan: free`, 512MB RAM) = **$0 / month**
+- **Persistent Disk**: **Removed** = **$0 / month**
+- **Database**: Render PostgreSQL (`plan: free`, 30-day lifecycle) or Neon/Supabase = **$0 / month**
+- **Object Storage**: Cloudflare R2 (10 GB free forever, $0 egress fees) = **$0 / month**
+- **Total Expected Monthly Cost**: **$0.00**
 
 ### Test Verification Summary:
 - **Backend Test Suite**: **45 / 45 passed (100%)** via Maven Surefire & JUnit Platform (`mvn test`).

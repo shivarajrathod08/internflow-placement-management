@@ -29,7 +29,7 @@ COPY --from=build --chown=internflow:internflow /workspace/target/*.jar app.jar
 USER internflow:internflow
 
 ENV SPRING_PROFILES_ACTIVE=prod \
-    JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom" \
+    JAVA_OPTS="-Xms128m -Xmx320m -XX:+UseG1GC -XX:MaxMetaspaceSize=128m -Djava.security.egd=file:/dev/./urandom" \
     PORT=8080
 
 EXPOSE 8080

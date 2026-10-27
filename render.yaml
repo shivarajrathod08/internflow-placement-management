@@ -1,18 +1,19 @@
 # ==============================================================================
-# InternFlow Production Infrastructure Blueprint (Render IaC)
+# InternFlow Free-Tier Infrastructure Blueprint (Render IaC)
+# 100% Free Tier - No Credit Card / Payment Required
 # https://render.com/docs/blueprint-spec
 # ==============================================================================
 
 services:
   # ----------------------------------------------------------------------------
-  # 1. Backend Web Service (Spring Boot 3 + Java 21)
+  # 1. Backend Web Service (Spring Boot 3 + Java 21) - Free Tier
   # ----------------------------------------------------------------------------
   - type: web
     name: internflow-backend
     runtime: docker
     rootDir: backend
     dockerfilePath: Dockerfile
-    plan: standard
+    plan: free
     region: oregon
     healthCheckPath: /actuator/health
     autoDeploy: true
@@ -30,33 +31,26 @@ services:
       # CORS: Frontend Origin(s)
       - key: CORS_ALLOWED_ORIGINS
         value: https://internflow-frontend.onrender.com,https://internflow-web.onrender.com,http://localhost:5173
-      # Storage Engine Configuration
-      # Set to 's3' when Cloudflare R2 / AWS S3 credentials are provided below
+      # Storage Engine: Cloudflare R2 Private Object Storage (Free Tier: 10GB, $0 Egress)
+      # Paid persistent disk removed to prevent unexpected charges.
       - key: STORAGE_TYPE
-        value: local
-      - key: UPLOAD_DIR
-        value: /app/storage
-      # Optional: Cloudflare R2 / AWS S3 Object Storage Credentials
-      - key: S3_ENDPOINT
-        sync: false
+        value: s3
       - key: S3_REGION
         value: auto
+      - key: S3_PATH_STYLE_ACCESS
+        value: "true"
+      # Cloudflare R2 credentials (Render prompts for these during Blueprint apply)
+      - key: S3_ENDPOINT
+        sync: false
       - key: S3_BUCKET_NAME
         sync: false
       - key: S3_ACCESS_KEY_ID
         sync: false
       - key: S3_SECRET_ACCESS_KEY
         sync: false
-      - key: S3_PATH_STYLE_ACCESS
-        value: "true"
-    # Persistent Disk for Local File Storage fallback
-    disk:
-      name: internflow-storage
-      mountPath: /app/storage
-      sizeGB: 1
 
   # ----------------------------------------------------------------------------
-  # 2. Frontend Static Site (React 18 + Vite + Tailwind CSS)
+  # 2. Frontend Static Site (React 18 + Vite + Tailwind CSS) - Free Tier
   # ----------------------------------------------------------------------------
   - type: web
     name: internflow-frontend
@@ -76,12 +70,14 @@ services:
         destination: /index.html
 
 # ------------------------------------------------------------------------------
-# 3. Managed PostgreSQL Database (PostgreSQL 16)
+# 3. Managed PostgreSQL Database - Free Tier
+# NOTE: Render's free PostgreSQL database expires 30 days after creation.
+# For a permanent free database, see docs/DEPLOYMENT.md for Neon / Supabase setup.
 # ------------------------------------------------------------------------------
 databases:
   - name: internflow-postgres
     databaseName: internflow_db
     user: internflow_user
-    plan: standard
+    plan: free
     region: oregon
     postgresMajorVersion: 16
