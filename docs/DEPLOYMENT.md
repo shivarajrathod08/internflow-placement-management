@@ -26,18 +26,25 @@ This guide provides the complete, tested procedure for deploying InternFlow to t
           +-------------------------------+                     +---------------+---------------+
                                                                                 |
                                             +-----------------------------------+-----------------------------------+
-                                            | JDBC (SSL / Auto-converted)                                           | S3 API (HTTPS)
+                                            | JDBC (SSL / Auto-converted)                                           | Local Filesystem
                                             v                                                                       v
                              +-------------------------------+                                       +-------------------------------+
-                             |    PostgreSQL Database        |                                       |     Cloudflare R2 Storage     |
-                             |  Render Free or Neon/Supabase |                                       |     (Private Object Bucket)   |
+                             |    PostgreSQL Database        |                                       |     Container Local Storage   |
+                             |  Render Free or Neon/Supabase |                                       |     (/app/storage)            |
                              |-------------------------------|                                       |-------------------------------|
-                             | - Flyway Migrations (V1 - V5) |                                       | - 100% Free Tier (10 GB)      |
-                             | - ACID Student/Offer Records  |                                       | - $0 Bandwidth / Egress Fees  |
-                             | - Render: 30-day free lifespan|                                       | - Replaces paid Render disks  |
-                             | - Neon/Supabase: No expiration|                                       | - Authenticated access only   |
+                             | - Flyway Migrations (V1 - V5) |                                       | - Zero setup / Zero config    |
+                             | - ACID Student/Offer Records  |                                       | - Full upload & view flow     |
+                             | - Render: 30-day free lifespan|                                       | - Ephemeral (demo mode)       |
+                             | - Neon/Supabase: No expiration|                                       | - Strict RBAC & Auth active   |
                              +-------------------------------+                                       +-------------------------------+
 ```
+
+> [!NOTE]
+> **Ephemeral Container Storage Notice (Demo Mode)**:
+> In `STORAGE_TYPE=local` mode on Render's free tier, uploaded documents reside in the container's `/app/storage` directory. 
+> Because Render free containers restart and spin down after 15 minutes of inactivity, any newly uploaded files during a session will be reset upon container restart. 
+> Seed sample resumes (Alex Rivera, Emily Watson) are built directly into the application and will always remain viewable and downloadable. 
+> When you are ready for permanent, persistent file storage, you can easily activate Cloudflare R2 by setting `STORAGE_TYPE=s3` and adding your bucket credentials.
 
 ---
 
@@ -50,7 +57,7 @@ If Render prompted for a credit card during Blueprint deployment, it was caused 
    - **Fix**: Updated both to `plan: free`.
 2. **Persistent Disk (`disk:`)**:
    Render **charges $0.25/GB/month** for persistent disks and **prohibits disks on free-tier web services**.
-   - **Fix**: Removed the `disk:` block completely. Resumes and documents are stored securely in **Cloudflare R2 Private Object Storage**, which provides **10 GB free forever with $0 egress fees**.
+   - **Fix**: Removed the `disk:` block completely. For the demo, `STORAGE_TYPE=local` uses container local storage at zero cost with zero credentials needed.
 3. **Managed PostgreSQL Plan**:
    Render requires a paid subscription unless `plan: free` is specified.
    - **Fix**: Switched to `plan: free`.
@@ -79,9 +86,9 @@ If Render prompted for a credit card during Blueprint deployment, it was caused 
 
 ---
 
-## 4. Option A: Automated One-Click Deployment via Updated Render Blueprint
+## 4. Option A: Automated One-Click Deployment via Render Blueprint (Demo Mode)
 
-The updated [`render.yaml`](file:///C:/Users/Rathlavath/.gemini/antigravity/scratch/internflow/render.yaml) is configured exclusively for **100% Free-Tier services**.
+The updated [`render.yaml`](file:///C:/Users/Rathlavath/.gemini/antigravity/scratch/internflow/render.yaml) is configured for **100% Free-Tier services with zero external dependencies**.
 
 ### Deployment Steps:
 
@@ -89,16 +96,10 @@ The updated [`render.yaml`](file:///C:/Users/Rathlavath/.gemini/antigravity/scra
 2. In the [Render Dashboard](https://dashboard.render.com), click **New +** > **Blueprint**.
 3. Connect your `internflow` repository.
 4. Render parses `render.yaml` and presents the free service plan:
-   - **`internflow-backend`**: Web Service (`plan: free`, Docker, Java 21)
+   - **`internflow-backend`**: Web Service (`plan: free`, Docker, Java 21, `STORAGE_TYPE=local`)
    - **`internflow-frontend`**: Static Site (`plan: free`, React + Vite)
    - **`internflow-postgres`**: PostgreSQL Database (`plan: free`)
-5. During the setup prompt, provide your Cloudflare R2 credentials (see Section 5 below):
-   - `S3_ENDPOINT`
-   - `S3_BUCKET_NAME`
-   - `S3_ACCESS_KEY_ID`
-   - `S3_SECRET_ACCESS_KEY`
-   *(If you don't have R2 yet, leave them blank; InternFlow will use the container's local `/app/storage` during testing)*.
-6. Click **Apply**. Render will deploy all services with **no payment method required**.
+5. Click **Apply**. Because all paid disks and Cloudflare R2 variables have been removed, Render will **not prompt for any credentials or payment information** and will deploy immediately.
 
 ---
 

@@ -1,6 +1,6 @@
 # ==============================================================================
-# InternFlow Free-Tier Infrastructure Blueprint (Render IaC)
-# 100% Free Tier - No Credit Card / Payment Required
+# InternFlow Zero-Paid-Service Demo Blueprint (Render IaC)
+# 100% Free Tier - No Credit Card / No External Cloud Storage Required
 # https://render.com/docs/blueprint-spec
 # ==============================================================================
 
@@ -31,23 +31,13 @@ services:
       # CORS: Frontend Origin(s)
       - key: CORS_ALLOWED_ORIGINS
         value: https://internflow-frontend.onrender.com,https://internflow-web.onrender.com,http://localhost:5173
-      # Storage Engine: Cloudflare R2 Private Object Storage (Free Tier: 10GB, $0 Egress)
-      # Paid persistent disk removed to prevent unexpected charges.
+      # Storage Engine: Local Storage (Demo Mode - Zero Configuration)
+      # Uses container filesystem (/app/storage) for resume upload/view/download.
+      # NOTE: Free-tier container storage is ephemeral and resets on restart/spin-down.
       - key: STORAGE_TYPE
-        value: s3
-      - key: S3_REGION
-        value: auto
-      - key: S3_PATH_STYLE_ACCESS
-        value: "true"
-      # Cloudflare R2 credentials (Render prompts for these during Blueprint apply)
-      - key: S3_ENDPOINT
-        sync: false
-      - key: S3_BUCKET_NAME
-        sync: false
-      - key: S3_ACCESS_KEY_ID
-        sync: false
-      - key: S3_SECRET_ACCESS_KEY
-        sync: false
+        value: local
+      - key: UPLOAD_DIR
+        value: /app/storage
 
   # ----------------------------------------------------------------------------
   # 2. Frontend Static Site (React 18 + Vite + Tailwind CSS) - Free Tier
