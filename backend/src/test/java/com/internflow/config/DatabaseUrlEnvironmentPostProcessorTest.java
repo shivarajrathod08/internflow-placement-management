@@ -6,6 +6,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
+import org.springframework.core.io.support.SpringFactoriesLoader;
 
 import java.util.Map;
 
@@ -18,7 +19,7 @@ class DatabaseUrlEnvironmentPostProcessorTest {
     private final SpringApplication application = new SpringApplication();
 
     @Test
-    @DisplayName("Should convert Render external postgresql:// URL to JDBC with SSL and bind Flyway")
+    @DisplayName("Should convert Render external postgresql:// URL to JDBC with SSL, credentials, and Flyway")
     void testRenderExternalPostgresUrl() {
         ConfigurableEnvironment env = new StandardEnvironment();
         env.getPropertySources().addFirst(new MapPropertySource("testEnv",
@@ -34,6 +35,7 @@ class DatabaseUrlEnvironmentPostProcessorTest {
         assertEquals("secret_pass123", env.getProperty("spring.datasource.password"));
         assertEquals("internflow_user", env.getProperty("spring.flyway.user"));
         assertEquals("secret_pass123", env.getProperty("spring.flyway.password"));
+        assertEquals("org.postgresql.Driver", env.getProperty("spring.datasource.driver-class-name"));
 
         // Prove it does NOT fall back to localhost:5432
         assertFalse(env.getProperty("spring.datasource.url").contains("localhost:5432"));
@@ -54,8 +56,53 @@ class DatabaseUrlEnvironmentPostProcessorTest {
                 env.getProperty("spring.flyway.url"));
         assertEquals("internflow_user", env.getProperty("spring.datasource.username"));
         assertEquals("my_secret_pass", env.getProperty("spring.datasource.password"));
+        assertEquals("org.postgresql.Driver", env.getProperty("spring.datasource.driver-class-name"));
 
         assertFalse(env.getProperty("spring.datasource.url").contains("localhost:5432"));
+    }
+
+    @Test
+    @DisplayName("Should convert Render URL without explicit port to default port 5432 and SSL")
+    void testRenderUrlWithoutExplicitPort() {
+        ConfigurableEnvironment env = new StandardEnvironment();
+        env.getPropertySources().addFirst(new MapPropertySource("testEnv",
+                Map.of("DATABASE_URL", "postgresql://user:pass@dpg-abc12345-a.oregon-postgres.render.com/internflow_db")));
+
+        processor.postProcessEnvironment(env, application);
+
+        assertEquals("jdbc:postgresql://dpg-abc12345-a.oregon-postgres.render.com:5432/internflow_db?sslmode=require",
+                env.getProperty("spring.datasource.url"));
+        assertEquals("user", env.getProperty("spring.datasource.username"));
+        assertEquals("pass", env.getProperty("spring.datasource.password"));
+        assertEquals("org.postgresql.Driver", env.getProperty("spring.datasource.driver-class-name"));
+    }
+
+    @Test
+    @DisplayName("Should decode URL-encoded special characters in password")
+    void testRenderUrlWithUrlEncodedPassword() {
+        ConfigurableEnvironment env = new StandardEnvironment();
+        env.getPropertySources().addFirst(new MapPropertySource("testEnv",
+                Map.of("DATABASE_URL", "postgresql://user:p%40ss%23word%21@dpg-abc12345-a:5432/internflow_db")));
+
+        processor.postProcessEnvironment(env, application);
+
+        assertEquals("jdbc:postgresql://dpg-abc12345-a:5432/internflow_db?sslmode=require",
+                env.getProperty("spring.datasource.url"));
+        assertEquals("user", env.getProperty("spring.datasource.username"));
+        assertEquals("p@ss#word!", env.getProperty("spring.datasource.password"));
+    }
+
+    @Test
+    @DisplayName("Should preserve existing query parameters and not duplicate sslmode")
+    void testRenderUrlPreservesQueryParams() {
+        ConfigurableEnvironment env = new StandardEnvironment();
+        env.getPropertySources().addFirst(new MapPropertySource("testEnv",
+                Map.of("DATABASE_URL", "postgresql://user:pass@remote-host:5432/internflow_db?sslmode=verify-full&connectTimeout=10")));
+
+        processor.postProcessEnvironment(env, application);
+
+        assertEquals("jdbc:postgresql://remote-host:5432/internflow_db?sslmode=verify-full&connectTimeout=10",
+                env.getProperty("spring.datasource.url"));
     }
 
     @Test
@@ -71,6 +118,7 @@ class DatabaseUrlEnvironmentPostProcessorTest {
                 env.getProperty("spring.datasource.url"));
         assertEquals("jdbc:postgresql://ep-summer-sunset-123.us-east-2.aws.neon.tech/internflow_db?sslmode=require",
                 env.getProperty("spring.flyway.url"));
+        assertEquals("org.postgresql.Driver", env.getProperty("spring.datasource.driver-class-name"));
 
         assertFalse(env.getProperty("spring.datasource.url").contains("localhost:5432"));
     }
@@ -88,6 +136,17 @@ class DatabaseUrlEnvironmentPostProcessorTest {
                 env.getProperty("spring.datasource.url"));
         assertEquals("cloud_user", env.getProperty("spring.datasource.username"));
         assertEquals("secret_pw", env.getProperty("spring.datasource.password"));
+    }
+
+    @Test
+    @DisplayName("Should verify DatabaseUrlEnvironmentPostProcessor is registered in META-INF/spring.factories")
+    void testSpringFactoriesRegistration() {
+        var factories = SpringFactoriesLoader.loadFactoryNames(
+                org.springframework.boot.env.EnvironmentPostProcessor.class,
+                getClass().getClassLoader()
+        );
+        assertTrue(factories.contains("com.internflow.config.DatabaseUrlEnvironmentPostProcessor"),
+                "DatabaseUrlEnvironmentPostProcessor must be registered in META-INF/spring.factories so Spring Boot discovers it at runtime");
     }
 
     @Test

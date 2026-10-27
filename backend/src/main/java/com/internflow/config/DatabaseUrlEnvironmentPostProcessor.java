@@ -9,6 +9,8 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -46,10 +48,19 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
         String rawDatabaseUrl = environment.getProperty("DATABASE_URL");
         if (rawDatabaseUrl == null || rawDatabaseUrl.isBlank()) {
+            rawDatabaseUrl = System.getenv("DATABASE_URL");
+        }
+        if (rawDatabaseUrl == null || rawDatabaseUrl.isBlank()) {
             rawDatabaseUrl = environment.getProperty("SPRING_DATASOURCE_URL");
         }
         if (rawDatabaseUrl == null || rawDatabaseUrl.isBlank()) {
+            rawDatabaseUrl = System.getenv("SPRING_DATASOURCE_URL");
+        }
+        if (rawDatabaseUrl == null || rawDatabaseUrl.isBlank()) {
             rawDatabaseUrl = environment.getProperty("DB_URL");
+        }
+        if (rawDatabaseUrl == null || rawDatabaseUrl.isBlank()) {
+            rawDatabaseUrl = System.getenv("DB_URL");
         }
 
         boolean isProdActive = isProductionProfileActive(environment);
@@ -159,13 +170,16 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
         Map<String, Object> props = new HashMap<>();
         props.put("spring.datasource.url", finalUrl);
         props.put("spring.flyway.url", finalUrl);
+        props.put("spring.datasource.driver-class-name", "org.postgresql.Driver");
         if (username != null) {
-            props.put("spring.datasource.username", username);
-            props.put("spring.flyway.user", username);
+            String decodedUsername = decodeSafe(username);
+            props.put("spring.datasource.username", decodedUsername);
+            props.put("spring.flyway.user", decodedUsername);
         }
         if (password != null) {
-            props.put("spring.datasource.password", password);
-            props.put("spring.flyway.password", password);
+            String decodedPassword = decodeSafe(password);
+            props.put("spring.datasource.password", decodedPassword);
+            props.put("spring.flyway.password", decodedPassword);
         }
 
         boolean hasSsl = finalUrl.contains("sslmode=require") || finalUrl.contains("ssl=true");
@@ -260,13 +274,16 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
         Map<String, Object> props = new HashMap<>();
         props.put("spring.datasource.url", finalJdbcUrl);
         props.put("spring.flyway.url", finalJdbcUrl);
+        props.put("spring.datasource.driver-class-name", "org.postgresql.Driver");
         if (username != null) {
-            props.put("spring.datasource.username", username);
-            props.put("spring.flyway.user", username);
+            String decodedUsername = decodeSafe(username);
+            props.put("spring.datasource.username", decodedUsername);
+            props.put("spring.flyway.user", decodedUsername);
         }
         if (password != null) {
-            props.put("spring.datasource.password", password);
-            props.put("spring.flyway.password", password);
+            String decodedPassword = decodeSafe(password);
+            props.put("spring.datasource.password", decodedPassword);
+            props.put("spring.flyway.password", decodedPassword);
         }
 
         boolean hasSsl = finalJdbcUrl.contains("sslmode=require") || finalJdbcUrl.contains("ssl=true");
@@ -274,6 +291,17 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
                 host, port, databaseName, hasSsl);
 
         return props;
+    }
+
+    private String decodeSafe(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return URLDecoder.decode(value, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return value;
+        }
     }
 
     private boolean isProductionProfileActive(ConfigurableEnvironment environment) {
