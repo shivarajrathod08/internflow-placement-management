@@ -76,4 +76,31 @@ class GlobalExceptionHandlerTest {
         assertEquals(401, response.getBody().getStatus());
         assertEquals("AUTHENTICATION_FAILED", response.getBody().getError());
     }
+
+    @Test
+    @DisplayName("DataIntegrityViolationException on email returns 409 Conflict")
+    void testDataIntegrityViolationOnEmailReturns409() {
+        org.springframework.dao.DataIntegrityViolationException ex =
+                new org.springframework.dao.DataIntegrityViolationException("duplicate key value violates unique constraint 'users_email_key'");
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleDataIntegrityViolation(ex, request);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(409, response.getBody().getStatus());
+        assertEquals("DUPLICATE_RESOURCE", response.getBody().getError());
+        assertEquals("An account with this email address already exists. Please sign in instead.", response.getBody().getMessage());
+    }
+
+    @Test
+    @DisplayName("General DataIntegrityViolationException returns 400 Bad Request")
+    void testGeneralDataIntegrityViolationReturns400() {
+        org.springframework.dao.DataIntegrityViolationException ex =
+                new org.springframework.dao.DataIntegrityViolationException("null value in column 'company_name' violates not-null constraint");
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleDataIntegrityViolation(ex, request);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(400, response.getBody().getStatus());
+        assertEquals("DATA_INTEGRITY_VIOLATION", response.getBody().getError());
+    }
 }

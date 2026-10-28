@@ -2,8 +2,10 @@ package com.internflow.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -102,6 +104,46 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .build();
         return new ResponseEntity<>(response, HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex, HttpServletRequest request) {
+        String specificMsg = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        log.warn("Database constraint violation at URI {}: {}", request.getRequestURI(), specificMsg);
+
+        String lowerCause = specificMsg != null ? specificMsg.toLowerCase() : "";
+        if (lowerCause.contains("email") || lowerCause.contains("users_email") || lowerCause.contains("uk_users_email")) {
+            ErrorResponse response = ErrorResponse.builder()
+                    .timestamp(LocalDateTime.now())
+                    .status(HttpStatus.CONFLICT.value())
+                    .error("DUPLICATE_RESOURCE")
+                    .message("An account with this email address already exists. Please sign in instead.")
+                    .path(request.getRequestURI())
+                    .build();
+            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        }
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("DATA_INTEGRITY_VIOLATION")
+                .message("The requested operation could not be completed due to invalid or conflicting data.")
+                .path(request.getRequestURI())
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        log.warn("Malformed HTTP message body at URI {}: {}", request.getRequestURI(), ex.getMessage());
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("MALFORMED_REQUEST")
+                .message("Request body is malformed or contains invalid data formats.")
+                .path(request.getRequestURI())
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)

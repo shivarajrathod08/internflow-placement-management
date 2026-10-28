@@ -1,6 +1,7 @@
 package com.internflow.modules.auth;
 
 import com.internflow.exception.BadRequestException;
+import com.internflow.exception.ConflictException;
 import com.internflow.exception.ResourceNotFoundException;
 import com.internflow.modules.audit.AuditService;
 import com.internflow.modules.company.Company;
@@ -40,8 +41,9 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail().trim(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(normalizedEmail, request.getPassword())
         );
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
@@ -89,12 +91,14 @@ public class AuthService {
 
     @Transactional
     public AuthResponse registerStudent(RegisterStudentRequest request) {
-        if (userRepository.existsByEmail(request.getEmail().trim())) {
-            throw new BadRequestException("An account with this email already exists: " + request.getEmail());
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            log.warn("Student registration rejected: duplicate email address attempt.");
+            throw new ConflictException("An account with this email address already exists. Please sign in instead.");
         }
 
         User user = User.builder()
-                .email(request.getEmail().trim())
+                .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(Role.STUDENT)
                 .active(true)
@@ -106,10 +110,10 @@ public class AuthService {
                 .user(savedUser)
                 .firstName(request.getFirstName().trim())
                 .lastName(request.getLastName().trim())
-                .phone(request.getPhone())
-                .college(request.getCollege())
-                .degree(request.getDegree())
-                .branch(request.getBranch())
+                .phone(request.getPhone() != null ? request.getPhone().trim() : null)
+                .college(request.getCollege() != null ? request.getCollege().trim() : null)
+                .degree(request.getDegree() != null ? request.getDegree().trim() : null)
+                .branch(request.getBranch() != null ? request.getBranch().trim() : null)
                 .graduationYear(request.getGraduationYear())
                 .cgpa(request.getCgpa())
                 .build();
@@ -120,7 +124,7 @@ public class AuthService {
         String jwt = tokenProvider.generateTokenFromUserDetails(userDetails);
 
         auditService.log("REGISTER_STUDENT", "Student", savedStudent.getId(), null, "ACTIVE",
-                "New student registered: " + savedUser.getEmail());
+                "New student registered successfully.");
 
         notificationService.createNotification(
                 savedUser.getId(),
@@ -137,17 +141,22 @@ public class AuthService {
                 .role(savedUser.getRole())
                 .profileId(savedStudent.getId())
                 .name(savedStudent.getFirstName() + " " + savedStudent.getLastName())
+                .active(savedUser.isActive())
+                .createdAt(savedUser.getCreatedAt())
+                .updatedAt(savedUser.getUpdatedAt())
                 .build();
     }
 
     @Transactional
     public AuthResponse registerCompany(RegisterCompanyRequest request) {
-        if (userRepository.existsByEmail(request.getEmail().trim())) {
-            throw new BadRequestException("An account with this email already exists: " + request.getEmail());
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            log.warn("Company registration rejected: duplicate email address attempt.");
+            throw new ConflictException("An account with this email address already exists. Please sign in instead.");
         }
 
         User user = User.builder()
-                .email(request.getEmail().trim())
+                .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(Role.COMPANY)
                 .active(true)
@@ -158,10 +167,10 @@ public class AuthService {
         Company company = Company.builder()
                 .user(savedUser)
                 .companyName(request.getCompanyName().trim())
-                .website(request.getWebsite())
-                .description(request.getDescription())
-                .industry(request.getIndustry())
-                .location(request.getLocation())
+                .website(request.getWebsite() != null ? request.getWebsite().trim() : null)
+                .description(request.getDescription() != null ? request.getDescription().trim() : null)
+                .industry(request.getIndustry() != null ? request.getIndustry().trim() : null)
+                .location(request.getLocation() != null ? request.getLocation().trim() : null)
                 .verificationStatus(CompanyVerificationStatus.PENDING)
                 .build();
 
@@ -191,6 +200,9 @@ public class AuthService {
                 .role(savedUser.getRole())
                 .profileId(savedCompany.getId())
                 .name(savedCompany.getCompanyName())
+                .active(savedUser.isActive())
+                .createdAt(savedUser.getCreatedAt())
+                .updatedAt(savedUser.getUpdatedAt())
                 .build();
     }
 

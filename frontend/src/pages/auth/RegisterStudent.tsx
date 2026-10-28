@@ -72,10 +72,14 @@ export const RegisterStudent: React.FC = () => {
       navigate('/student/dashboard');
     } catch (err: any) {
       const serverMsg = err.response?.data?.message;
-      if (err.response?.status === 409) {
+      const detailsMsg = err.response?.data?.details?.map((d: any) => d.message).join(' ');
+      const status = err.response?.status;
+      if (status === 409) {
         setError(serverMsg || 'An account with this email address already exists. Please sign in instead.');
-      } else if (err.response?.status === 400) {
-        setError(serverMsg || 'Please review your profile details and ensure all required fields are correct.');
+      } else if (status === 400) {
+        setError(detailsMsg || serverMsg || 'Please review your profile details and ensure all required fields are correct.');
+      } else if (status === 500) {
+        setError('A server error occurred while processing registration. Please try again later.');
       } else if (err.code === 'ERR_NETWORK') {
         setError('Unable to reach the server. Please verify your connection and try again.');
       } else {
